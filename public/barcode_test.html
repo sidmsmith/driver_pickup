@@ -4,8 +4,46 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Barcode Test - SHI000000020</title>
-  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
-  <script src="https://unpkg.com/qrcode@1.5.3/build/qrcode.min.js"></script>
+  <!-- Try multiple CDN sources for reliability -->
+  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js" 
+          onerror="console.error('JsBarcode (jsdelivr) failed, trying alternative...'); loadJsBarcodeAlternative();"></script>
+  <script src="https://unpkg.com/qrcode@1.5.3/build/qrcode.min.js"
+          onerror="console.error('QRCode (unpkg) failed, trying alternative...'); loadQRCodeAlternative();"></script>
+  
+  <script>
+    // Fallback CDN loading functions
+    function loadJsBarcodeAlternative() {
+      if (typeof JsBarcode === 'undefined') {
+        console.log('Loading JsBarcode from alternative CDN...');
+        const script = document.createElement('script');
+        script.src = 'https://unpkg.com/jsbarcode@3.11.5/dist/JsBarcode.all.min.js';
+        script.onerror = function() {
+          console.error('All JsBarcode CDNs failed');
+          window.jsbarcodeFailed = true;
+        };
+        script.onload = function() {
+          console.log('JsBarcode loaded from alternative CDN');
+        };
+        document.head.appendChild(script);
+      }
+    }
+    
+    function loadQRCodeAlternative() {
+      if (typeof QRCode === 'undefined') {
+        console.log('Loading QRCode from alternative CDN...');
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js';
+        script.onerror = function() {
+          console.error('All QRCode CDNs failed');
+          window.qrcodeFailed = true;
+        };
+        script.onload = function() {
+          console.log('QRCode loaded from alternative CDN');
+        };
+        document.head.appendChild(script);
+      }
+    }
+  </script>
   <style>
     * {
       box-sizing: border-box;
@@ -226,11 +264,43 @@
     }
     
     // Wait for DOM and libraries to be ready
+    let retryCount = 0;
+    const maxRetries = 30; // 6 seconds max (30 * 200ms)
+    
     function init() {
+      retryCount++;
+      
+      const qrAvailable = typeof QRCode !== 'undefined';
+      const jsbAvailable = typeof JsBarcode !== 'undefined';
+      
+      // Check for load failures
+      if (window.jsbarcodeFailed && !jsbAvailable) {
+        console.error('JsBarcode failed to load from all CDNs');
+        document.getElementById('barcode-code128').innerHTML = '<p style="color: red; padding: 20px;">Error: JsBarcode library failed to load.</p>';
+        document.getElementById('barcode-code39').innerHTML = '<p style="color: red; padding: 20px;">Error: JsBarcode library failed to load.</p>';
+      }
+      
+      if (window.qrcodeFailed && !qrAvailable) {
+        console.error('QRCode failed to load from all CDNs');
+        document.getElementById('qrcode').innerHTML = '<p style="color: red; padding: 20px;">Error: QRCode library failed to load.</p>';
+      }
+      
       // Check if libraries are loaded, retry if not
-      if (typeof QRCode === 'undefined' || typeof JsBarcode === 'undefined') {
-        console.log('Libraries not ready yet, retrying...');
-        setTimeout(init, 200);
+      if (!qrAvailable || !jsbAvailable) {
+        if (retryCount < maxRetries) {
+          if (retryCount % 5 === 0) { // Only log every 5th retry to reduce spam
+            console.log('Waiting for libraries... QRCode: ' + (qrAvailable ? '✓' : '✗') + ', JsBarcode: ' + (jsbAvailable ? '✓' : '✗') + ' (' + retryCount + '/' + maxRetries + ')');
+          }
+          setTimeout(init, 200);
+        } else {
+          console.error('Libraries failed to load after ' + maxRetries + ' retries');
+          const errorMsg = '<p style="color: red; padding: 20px;">Error: Libraries took too long to load.<br>QRCode: ' + (qrAvailable ? 'loaded' : 'missing') + '<br>JsBarcode: ' + (jsbAvailable ? 'loaded' : 'missing') + '<br>Please check your internet connection and refresh the page.</p>';
+          if (!qrAvailable) document.getElementById('qrcode').innerHTML = errorMsg;
+          if (!jsbAvailable) {
+            document.getElementById('barcode-code128').innerHTML = errorMsg;
+            document.getElementById('barcode-code39').innerHTML = errorMsg;
+          }
+        }
         return;
       }
       
@@ -238,13 +308,13 @@
       generateBarcodes();
     }
     
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', function() {
-        setTimeout(init, 100);
-      });
-    } else {
-      setTimeout(init, 100);
-    }
+    // Wait for window load to ensure scripts have had time to load
+    window.addEventListener('load', function() {
+      console.log('Window loaded, checking libraries...');
+      console.log('QRCode:', typeof QRCode !== 'undefined' ? 'available' : 'missing');
+      console.log('JsBarcode:', typeof JsBarcode !== 'undefined' ? 'available' : 'missing');
+      setTimeout(init, 500); // Give scripts extra time after window load
+    });
   </script>
 </body>
 </html>
