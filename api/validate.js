@@ -81,7 +81,8 @@ export default async function handler(req, res) {
 
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const { action, org, shipmentId } = req.body;
+  const { action, org: orgFromBody, shipmentId } = req.body;
+  let org = orgFromBody;
 
   // === APP OPENED (NO ORG) ===
   if (action === 'app_opened') {
@@ -109,25 +110,31 @@ export default async function handler(req, res) {
     if (!shipmentId) {
       return res.status(400).json({ success: false, error: "ShipmentId required" });
     }
+    
+    // Get org from request body (required for selectedOrganization header)
+    const requestOrg = req.body.org;
+    if (!requestOrg) {
+      return res.status(400).json({ success: false, error: "ORG required for barcode validation" });
+    }
 
     const payload = {
       Query: `ShipmentId == '${shipmentId}'`,
       Size: 1
     };
 
-    console.log('[validate_barcode] Request', JSON.stringify({ org, payload }, null, 2));
-    const shipmentRes = await apiCall('POST', '/shipment/api/shipment/shipment/search', token, org, payload);
+    console.log('[validate_barcode] Request', JSON.stringify({ org: requestOrg, payload }, null, 2));
+    const shipmentRes = await apiCall('POST', '/shipment/api/shipment/shipment/search', token, requestOrg, payload);
     console.log('[validate_barcode] Response', JSON.stringify(shipmentRes, null, 2));
 
     if (shipmentRes.error) {
-      await sendHA("barcode_validation_failed", org, { shipmentId });
+      await sendHA("barcode_validation_failed", requestOrg, { shipmentId });
       return res.json({ success: false, error: shipmentRes.error });
     }
 
     // Extract shipment data
     const shipment = shipmentRes.data && shipmentRes.data.length > 0 ? shipmentRes.data[0] : null;
     if (!shipment) {
-      await sendHA("barcode_not_found", org, { shipmentId });
+      await sendHA("barcode_not_found", requestOrg, { shipmentId });
       return res.json({ success: false, error: "Shipment not found" });
     }
 
@@ -148,7 +155,7 @@ export default async function handler(req, res) {
       }
     }
 
-    await sendHA("barcode_validated", org, { shipmentId });
+    await sendHA("barcode_validated", requestOrg, { shipmentId });
     return res.json(result);
   }
 

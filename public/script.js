@@ -19,6 +19,7 @@ const clearSignatureBtn = document.getElementById('clearSignatureBtn');
 const downloadSignatureBtn = document.getElementById('downloadSignatureBtn');
 
 let token = null;
+let currentOrg = null; // Store org after authentication
 let signaturePad = null;
 let currentShipmentId = null;
 let isScanning = false;
@@ -101,6 +102,7 @@ async function authenticate() {
   }
   
   token = res.token;
+  currentOrg = org; // Store org for future API calls
   showStatus('Authenticated!', 'success');
   authSection.style.display = 'none';
   mainUI.style.display = 'block';
@@ -117,7 +119,10 @@ async function validateBarcode(shipmentId) {
   }
   
   showStatus('Validating barcode...', 'info');
-  const res = await apiCall('validate_barcode', { shipmentId: shipmentId.trim() });
+  const res = await apiCall('validate_barcode', { 
+    org: currentOrg,
+    shipmentId: shipmentId.trim() 
+  });
   
   if (!res.success) {
     showStatus(res.error || 'Barcode validation failed', 'error');
