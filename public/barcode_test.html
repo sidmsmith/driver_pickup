@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Barcode Test - SHI000000020</title>
+  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      margin: 0;
+      background: #fff;
+      padding: 2rem;
+    }
+    .barcode-container {
+      text-align: center;
+      background: white;
+      padding: 2rem;
+      border: 2px solid #333;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    h1 {
+      margin-bottom: 1rem;
+      color: #333;
+    }
+    .barcode-label {
+      margin-top: 1rem;
+      font-size: 1.2rem;
+      font-weight: bold;
+      color: #333;
+    }
+    svg {
+      max-width: 100%;
+      height: auto;
+    }
+    .instructions {
+      margin-top: 2rem;
+      padding: 1rem;
+      background: #f0f0f0;
+      border-radius: 4px;
+      max-width: 600px;
+    }
+  </style>
+</head>
+<body>
+  <div class="barcode-container">
+    <h1>Test Barcode</h1>
+    <svg id="barcode"></svg>
+    <div class="barcode-label">SHI000000020</div>
+  </div>
+  
+  <div class="instructions">
+    <h3>Instructions:</h3>
+    <ul style="text-align: left;">
+      <li>This barcode contains: <strong>SHI000000020</strong></li>
+      <li>Format: Code 128</li>
+      <li>Try scanning this with the Driver Pickup app camera</li>
+      <li>Make sure the barcode is clearly visible and well-lit</li>
+      <li>Hold the camera steady and at an appropriate distance</li>
+    </ul>
+  </div>
+
+  <script>
+    // Generate Code 128 barcode
+    JsBarcode("#barcode", "SHI000000020", {
+      format: "CODE128",
+      width: 2,
+      height: 100,
+      displayValue: true,
+      fontSize: 20,
+      margin: 10,
+      background: "#ffffff",
+      lineColor: "#000000"
+    });
+  </script>
+</body>
+</html>
+
