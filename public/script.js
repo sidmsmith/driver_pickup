@@ -615,9 +615,11 @@ cameraModal.addEventListener('click', (e) => {
 
 // App opened - send tracking event
 window.addEventListener('load', async () => {
+  loadTheme(); // Load saved theme
   await apiCall('app_opened');
   
   // Check for auto-authenticate
   checkAutoAuth();
+  initUI();
 });
 
