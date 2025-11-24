@@ -27,6 +27,7 @@ let currentOrg = null; // Store org after authentication
 let signaturePad = null;
 let currentShipmentId = null;
 let isScanning = false;
+let qrScanInterval = null; // For QR code scanning
 
 // Initialize Signature Pad
 function initSignaturePad() {
@@ -256,8 +257,7 @@ function initBarcodeScanner() {
     },
     decoder: {
       readers: [
-        "qrcode_reader",  // QR codes - best for screen scanning
-        "code_128_reader",
+        "code_128_reader",  // Primary format for shipment IDs
         "code_39_reader",
         "code_39_vin_reader",
         "ean_reader",
@@ -287,17 +287,17 @@ function initBarcodeScanner() {
     
     isScanning = true;
     Quagga.start();
-    showStatus('Camera ready. Point at barcode to scan.', 'info');
+    showStatus('Camera ready. Point at barcode (Code 128) or QR code to scan.', 'info');
   });
   
-  // Handle successful barcode detection
+  // Handle successful 1D barcode detection (QuaggaJS)
   Quagga.onDetected((result) => {
     const code = result.codeResult.code;
     const format = result.codeResult.format;
     const confidence = result.codeResult.decodedCodes ? 
       result.codeResult.decodedCodes.filter(x => x.error === 0).length / result.codeResult.decodedCodes.length : 0;
     
-    console.log('Barcode detected:', { code, format, confidence });
+    console.log('1D Barcode detected:', { code, format, confidence });
     
     if (code) {
       // Only accept if confidence is reasonable (at least 50% of codes decoded correctly)
@@ -306,17 +306,63 @@ function initBarcodeScanner() {
         return;
       }
       
-      // Validate format - shipment IDs should start with "SHI" and be alphanumeric
-      if (code.length > 0 && /^[A-Z0-9]+$/i.test(code)) {
-        barcodeInput.value = code;
-        closeCamera();
-        validateBarcode(code);
-      } else {
-        console.warn('Invalid barcode format detected:', code);
-        showStatus(`Scanned: "${code}" - Does not look like a valid shipment ID. Please try again.`, 'error');
-      }
+      // Validate and process the scanned code
+      processScannedCode(code, '1D Barcode: ' + format);
     }
   });
+  
+  // Start QR code scanning (jsQR) - runs alongside QuaggaJS
+  startQRCodeScanning();
+}
+
+// QR code scanning using jsQR
+function startQRCodeScanning() {
+  if (!window.jsQR) {
+    console.warn('jsQR library not loaded, QR code scanning disabled');
+    return;
+  }
+  
+  const video = cameraViewport.querySelector('video');
+  if (!video) {
+    // Wait for video element to be created by QuaggaJS
+    setTimeout(startQRCodeScanning, 500);
+    return;
+  }
+  
+  const canvas = document.createElement('canvas');
+  const context = canvas.getContext('2d');
+  
+  qrScanInterval = setInterval(() => {
+    if (!isScanning || !video || video.readyState !== video.HAVE_ENOUGH_DATA) {
+      return;
+    }
+    
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+    
+    const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+    const code = jsQR(imageData.data, imageData.width, imageData.height);
+    
+    if (code) {
+      console.log('QR Code detected:', { code: code.data });
+      processScannedCode(code.data, 'QR Code');
+    }
+  }, 300); // Check every 300ms
+}
+
+// Process scanned code (from either 1D barcode or QR code)
+function processScannedCode(code, source) {
+  // Validate format - shipment IDs should be alphanumeric
+  if (code.length > 0 && /^[A-Z0-9]+$/i.test(code)) {
+    console.log(`Processing scanned code from ${source}:`, code);
+    barcodeInput.value = code;
+    closeCamera();
+    validateBarcode(code);
+  } else {
+    console.warn(`Invalid code format detected from ${source}:`, code);
+    showStatus(`Scanned: "${code}" - Does not look like a valid shipment ID. Please try again.`, 'error');
+  }
 }
 
 // Open camera modal
@@ -333,6 +379,13 @@ function closeCamera() {
     Quagga.stop();
     isScanning = false;
   }
+  
+  // Stop QR code scanning
+  if (qrScanInterval) {
+    clearInterval(qrScanInterval);
+    qrScanInterval = null;
+  }
+  
   cameraModal.classList.remove('active');
   cameraViewport.innerHTML = ''; // Clear viewport
 }
