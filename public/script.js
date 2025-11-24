@@ -14,9 +14,8 @@ const driverField = document.getElementById('driver');
 const cameraModal = document.getElementById('cameraModal');
 const closeCameraBtn = document.getElementById('closeCameraBtn');
 const cameraViewport = document.getElementById('cameraViewport');
-const saveSignatureBtn = document.getElementById('saveSignatureBtn');
+const confirmPickupBtn = document.getElementById('confirmPickupBtn');
 const clearSignatureBtn = document.getElementById('clearSignatureBtn');
-const downloadSignatureBtn = document.getElementById('downloadSignatureBtn');
 const authStatusEl = document.getElementById('authStatus');
 
 let token = null;
@@ -301,11 +300,11 @@ function closeCamera() {
   cameraViewport.innerHTML = ''; // Clear viewport
 }
 
-// Save signature (upload to Manhattan WMS)
-async function saveSignature() {
+// Confirm pickup (upload signature to Manhattan WMS)
+async function confirmPickup() {
   // Validate signature is not empty
   if (signaturePad.isEmpty()) {
-    showStatus('Please sign before saving', 'error');
+    showStatus('Please sign before confirming pickup', 'error');
     return;
   }
   
@@ -322,9 +321,9 @@ async function saveSignature() {
   }
   
   // Disable button and show loading state
-  saveSignatureBtn.disabled = true;
-  const originalText = saveSignatureBtn.innerHTML;
-  saveSignatureBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Uploading...';
+  confirmPickupBtn.disabled = true;
+  const originalText = confirmPickupBtn.innerHTML;
+  confirmPickupBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Uploading...';
   showStatus('Uploading signature...', 'info');
   
   try {
@@ -332,9 +331,8 @@ async function saveSignature() {
     const dataURL = signaturePad.toDataURL('image/png');
     const base64Data = dataURL.replace(/^data:image\/png;base64,/, '');
     
-    // Generate filename with same format as download
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
-    const filename = `${currentShipmentId}_Signature_${timestamp}.png`;
+    // Generate filename: Signature_{ShipmentId}.png
+    const filename = `Signature_${currentShipmentId}.png`;
     
     // Upload to Manhattan WMS
     const res = await apiCall('upload_signature', {
@@ -352,18 +350,35 @@ async function saveSignature() {
     }
     
     // Success - show success message
-    showStatus('Signature uploaded successfully!', 'success');
+    showStatus('Pickup confirmed successfully!', 'success');
     
     // Store in localStorage as backup
     localStorage.setItem(`signature_${currentShipmentId}`, dataURL);
+    
+    // Reset UI: clear barcode input, hide sections, clear signature pad
+    setTimeout(() => {
+      barcodeInput.value = '';
+      currentShipmentId = null;
+      shipmentInfo.style.display = 'none';
+      const signatureSection = document.querySelector('.signature-section');
+      if (signatureSection) {
+        signatureSection.style.display = 'none';
+      }
+      if (signaturePad) {
+        signaturePad.clear();
+      }
+      hideStatus();
+      // Focus back on barcode input for next scan
+      barcodeInput.focus();
+    }, 1500); // Wait 1.5 seconds to show success message
     
   } catch (error) {
     console.error('Signature upload error:', error);
     showStatus(`Upload error: ${error.message || 'Unknown error'}`, 'error');
   } finally {
     // Re-enable button
-    saveSignatureBtn.disabled = false;
-    saveSignatureBtn.innerHTML = originalText;
+    confirmPickupBtn.disabled = false;
+    confirmPickupBtn.innerHTML = originalText;
   }
 }
 
@@ -376,24 +391,7 @@ function clearSignature() {
 }
 
 // Download signature
-function downloadSignature() {
-  if (signaturePad.isEmpty()) {
-    showStatus('Please sign before downloading', 'error');
-    return;
-  }
-  
-  const dataURL = signaturePad.toDataURL('image/png');
-  const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
-  // Format: SHI000000020_Signature_2025-11-24T17-30-20.png
-  const filename = `${currentShipmentId || 'unknown'}_Signature_${timestamp}.png`;
-  
-  const link = document.createElement('a');
-  link.download = filename;
-  link.href = dataURL;
-  link.click();
-  
-  showStatus(`Signature downloaded: ${filename}`, 'success');
-}
+// Download signature removed - functionality combined into confirmPickup
 
 // Event Listeners
 orgInput.addEventListener('keypress', (e) => {
@@ -411,9 +409,8 @@ barcodeInput.addEventListener('keypress', (e) => {
 cameraBtn.addEventListener('click', openCamera);
 closeCameraBtn.addEventListener('click', closeCamera);
 
-saveSignatureBtn.addEventListener('click', saveSignature);
+confirmPickupBtn.addEventListener('click', confirmPickup);
 clearSignatureBtn.addEventListener('click', clearSignature);
-downloadSignatureBtn.addEventListener('click', downloadSignature);
 
 // Close camera on background click
 cameraModal.addEventListener('click', (e) => {
