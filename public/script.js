@@ -397,7 +397,7 @@ function clearSignature() {
 // Download signature
 
 // Theme Management
-const DEFAULT_THEME_KEY = 'minimal-light';
+const DEFAULT_THEME_KEY = 'manhattan';
 
 const THEMES = {
   default: {
@@ -605,6 +605,16 @@ closeCameraBtn.addEventListener('click', closeCamera);
 
 confirmPickupBtn.addEventListener('click', confirmPickup);
 clearSignatureBtn.addEventListener('click', clearSignature);
+
+// Theme selector
+themeSelectorBtn?.addEventListener('click', openThemeModal);
+
+// Close theme modal on backdrop click
+modalBackdrop?.addEventListener('click', () => {
+  if (isModalVisible(themeModal)) {
+    closeThemeModal();
+  }
+});
 
 // Close camera on background click
 cameraModal.addEventListener('click', (e) => {
