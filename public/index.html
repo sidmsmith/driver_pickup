@@ -216,27 +216,78 @@
       left: 0;
       width: 100%;
       height: 100%;
-      background: rgba(0,0,0,0.9);
+      background: rgba(0,0,0,0.85);
       z-index: 1000;
       flex-direction: column;
       align-items: center;
       justify-content: center;
+      padding: 1rem;
+      box-sizing: border-box;
     }
     .camera-modal.active {
       display: flex;
     }
     .camera-container {
       width: 90%;
-      max-width: 500px;
+      max-width: 400px;
       background: #000;
-      border-radius: 8px;
+      border-radius: 12px;
       overflow: hidden;
       position: relative;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+      display: flex;
+      flex-direction: column;
     }
     #cameraViewport {
       width: 100%;
-      height: auto;
-      display: block;
+      height: 0;
+      padding-bottom: 75%; /* 4:3 aspect ratio */
+      position: relative;
+      overflow: hidden;
+      background: #000;
+    }
+    #cameraViewport video,
+    #cameraViewport canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    /* Scanning frame overlay */
+    .scanning-frame {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 80%;
+      height: 60%;
+      border: 2px solid #28a745;
+      border-radius: 8px;
+      pointer-events: none;
+      box-shadow: 0 0 0 9999px rgba(0,0,0,0.5);
+      z-index: 10;
+    }
+    .scanning-frame::before,
+    .scanning-frame::after {
+      content: '';
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      border: 3px solid #28a745;
+    }
+    .scanning-frame::before {
+      top: -3px;
+      left: -3px;
+      border-right: none;
+      border-bottom: none;
+    }
+    .scanning-frame::after {
+      bottom: -3px;
+      right: -3px;
+      border-left: none;
+      border-top: none;
     }
     .camera-controls {
       padding: 1rem;
@@ -244,9 +295,17 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
+      flex-shrink: 0;
     }
     .camera-controls .btn {
       min-width: 100px;
+      z-index: 20;
+      position: relative;
+    }
+    .camera-controls .text-white {
+      flex: 1;
+      text-align: center;
+      margin: 0 1rem;
     }
     
     /* Hidden until authenticated */
@@ -265,6 +324,26 @@
         height: 150px;
       }
       .theme-selector-btn { display: none; }
+      .camera-modal {
+        padding: 0.5rem;
+      }
+      .camera-container {
+        width: 95%;
+        max-width: none;
+      }
+      .camera-controls {
+        padding: 0.75rem;
+        flex-wrap: wrap;
+      }
+      .camera-controls .btn {
+        min-width: 80px;
+        font-size: 0.9rem;
+      }
+      .camera-controls .text-white {
+        width: 100%;
+        margin: 0.5rem 0 0 0;
+        order: 3;
+      }
     }
     .modal-backdrop {
       position: fixed;
@@ -413,13 +492,15 @@
   <!-- Camera Modal -->
   <div id="cameraModal" class="camera-modal">
     <div class="camera-container">
-      <div id="cameraViewport"></div>
+      <div id="cameraViewport">
+        <div class="scanning-frame"></div>
+      </div>
       <div class="camera-controls">
         <button id="closeCameraBtn" class="btn btn-danger" type="button">
           <i class="fas fa-times"></i> Close
         </button>
         <div class="text-white text-center">
-          <small>Point camera at barcode</small>
+          <small>Point camera at barcode or QR code</small>
         </div>
       </div>
     </div>

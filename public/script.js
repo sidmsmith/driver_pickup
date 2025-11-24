@@ -238,14 +238,19 @@ async function validateBarcode(shipmentId) {
 function initBarcodeScanner() {
   if (isScanning) return;
   
+  // Get container dimensions to constrain video size
+  const container = cameraViewport.parentElement;
+  const maxWidth = Math.min(400, window.innerWidth * 0.9);
+  const maxHeight = Math.min(300, window.innerHeight * 0.6);
+  
   Quagga.init({
     inputStream: {
       name: "Live",
       type: "LiveStream",
       target: cameraViewport,
       constraints: {
-        width: 640,
-        height: 480,
+        width: { ideal: maxWidth },
+        height: { ideal: maxHeight },
         facingMode: "environment" // Use back camera on mobile
       },
       area: { // Focus on center area for better accuracy
