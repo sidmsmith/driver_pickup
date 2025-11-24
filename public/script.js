@@ -164,7 +164,7 @@ async function authenticate() {
     }
     
     token = res.token;
-    currentOrg = org; // Store org for future API calls
+    currentOrg = org.toUpperCase(); // Store org in uppercase for API consistency
     hideAuthStatus(); // Hide auth status on success
     authSection.style.display = 'none';
     mainUI.style.display = 'block';

@@ -57,11 +57,13 @@ async function getToken(org) {
 // API call wrapper
 async function apiCall(method, path, token, org, body = null) {
   const url = `https://${API_HOST}${path}`;
+  // Convert org to uppercase for API consistency (as used in other apps)
+  const orgUpper = org ? org.toUpperCase() : org;
   const headers = {
     Authorization: `Bearer ${token}`,
     'Content-Type': 'application/json',
-    selectedOrganization: org,
-    selectedLocation: `${org}-DM1`
+    selectedOrganization: orgUpper,
+    selectedLocation: `${orgUpper}-DM1`
   };
 
   const res = await fetch(url, { 
