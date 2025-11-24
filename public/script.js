@@ -250,16 +250,11 @@ function initBarcodeScanner() {
       type: "LiveStream",
       target: cameraViewport,
       constraints: {
-        width: { ideal: maxWidth },
-        height: { ideal: maxHeight },
+        width: { min: 320, ideal: 640, max: 1280 },
+        height: { min: 240, ideal: 480, max: 720 },
         facingMode: "environment" // Use back camera on mobile
-      },
-      area: { // Focus on center area for better accuracy
-        top: "20%",
-        right: "20%",
-        left: "20%",
-        bottom: "20%"
       }
+      // Removed area constraint - scan full viewport for better 1D barcode detection
     },
     decoder: {
       readers: [
@@ -278,11 +273,16 @@ function initBarcodeScanner() {
         showFrequency: false,
         drawScanline: true,
         showPattern: false
-      }
+      },
+      // Additional options for better 1D barcode detection
+      patchSize: "medium", // Try different patch sizes
+      showCanvas: false,
+      showPatches: false
     },
     locate: true,
-    numOfWorkers: 2, // Use multiple workers for better performance
-    frequency: 10 // Check every 10 frames
+    numOfWorkers: 4, // More workers for better performance
+    frequency: 30, // Check every 30 frames (more frequent scanning)
+    halfSample: false // Don't downsample - use full resolution for better accuracy
   }, (err) => {
     if (err) {
       console.error('QuaggaJS initialization error:', err);
@@ -306,11 +306,16 @@ function initBarcodeScanner() {
     console.log('1D Barcode detected:', { code, format, confidence });
     
     if (code) {
-      // Only accept if confidence is reasonable (at least 50% of codes decoded correctly)
-      if (confidence < 0.5) {
-        console.warn('Low confidence scan, ignoring:', code, 'confidence:', confidence);
+      // Lower confidence threshold for 1D barcodes (they're harder to scan than QR codes)
+      // Accept if at least 30% of codes decoded correctly, or if format is Code 128 (our primary format)
+      const minConfidence = (format === 'code_128' || format === 'code_39') ? 0.25 : 0.4;
+      
+      if (confidence < minConfidence) {
+        console.warn('Low confidence scan, ignoring:', code, 'format:', format, 'confidence:', confidence.toFixed(2));
         return;
       }
+      
+      console.log('Accepting 1D barcode scan:', { code, format, confidence: confidence.toFixed(2) });
       
       // Validate and process the scanned code
       processScannedCode(code, '1D Barcode: ' + format);
