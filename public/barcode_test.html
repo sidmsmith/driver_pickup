@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Barcode Test - SHI000000020</title>
   <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
   <style>
     * {
       box-sizing: border-box;
@@ -81,6 +82,12 @@
     .instructions li {
       margin-bottom: 0.5rem;
     }
+    #qrcode {
+      display: block;
+      margin: 0 auto;
+      max-width: 100%;
+      height: auto;
+    }
     .download-btn {
       margin-top: 1rem;
       padding: 0.75rem 1.5rem;
@@ -103,7 +110,12 @@
     <h1>Test Barcode: SHI000000020</h1>
     
     <div class="barcode-wrapper">
-      <div class="format-label">Code 128 (Recommended)</div>
+      <div class="format-label">QR Code (Best for Screen Scanning - Recommended)</div>
+      <canvas id="qrcode"></canvas>
+    </div>
+    
+    <div class="barcode-wrapper">
+      <div class="format-label">Code 128</div>
       <svg id="barcode-code128"></svg>
     </div>
     
@@ -119,18 +131,35 @@
     <h3>Scanning Instructions:</h3>
     <ul>
       <li><strong>Expected Value:</strong> SHI000000020</li>
-      <li><strong>Formats:</strong> Code 128 (primary) and Code 39 (fallback)</li>
+      <li><strong>Formats:</strong> QR Code (recommended for screen scanning), Code 128, and Code 39</li>
+      <li><strong>QR Code is best for screen scanning</strong> - it has built-in error correction and works much better than traditional barcodes on screens</li>
       <li>Try scanning with the Driver Pickup app camera</li>
       <li>Make sure your screen brightness is at maximum</li>
       <li>Hold the camera steady, 6-12 inches away from the screen</li>
-      <li>Ensure the barcode fills most of the camera viewfinder</li>
-      <li>If one format doesn't work, try the other</li>
-      <li>Screen scanning can be tricky - try different angles and distances</li>
+      <li>Ensure the QR code/barcode fills most of the camera viewfinder</li>
+      <li>Start with the QR code - it should scan much more reliably!</li>
     </ul>
   </div>
 
   <script>
     const barcodeValue = "SHI000000020";
+    
+    // Generate QR Code (best for screen scanning - has error correction built in)
+    QRCode.toCanvas(document.getElementById('qrcode'), barcodeValue, {
+      width: 400,
+      margin: 2,
+      color: {
+        dark: '#000000',
+        light: '#FFFFFF'
+      },
+      errorCorrectionLevel: 'M' // Medium error correction (15% recovery)
+    }, function (error) {
+      if (error) {
+        console.error('QR Code generation error:', error);
+      } else {
+        console.log('QR Code generated successfully');
+      }
+    });
     
     // Generate Code 128 barcode (larger, thicker bars for better scanning)
     JsBarcode("#barcode-code128", barcodeValue, {

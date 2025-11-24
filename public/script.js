@@ -256,6 +256,7 @@ function initBarcodeScanner() {
     },
     decoder: {
       readers: [
+        "qrcode_reader",  // QR codes - best for screen scanning
         "code_128_reader",
         "code_39_reader",
         "code_39_vin_reader",
