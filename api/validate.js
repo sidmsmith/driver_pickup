@@ -118,7 +118,7 @@ export default async function handler(req, res) {
     }
 
     const payload = {
-      Query: `ShipmentId == '${shipmentId}'`,
+      Query: `ShipmentId = '${shipmentId}'`,
       Size: 1
     };
 
