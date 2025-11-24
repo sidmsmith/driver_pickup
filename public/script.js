@@ -465,25 +465,12 @@ function closeCamera() {
   }
 }
 
-// Enhance signature image with logo and metadata
+// Enhance signature image with logo and metadata above the signature
 async function enhanceSignatureImage() {
   return new Promise((resolve, reject) => {
     const canvas = signaturePad.canvas;
     const originalWidth = canvas.width;
     const originalHeight = canvas.height;
-    
-    // Create a new canvas for the enhanced image
-    const enhancedCanvas = document.createElement('canvas');
-    enhancedCanvas.width = originalWidth;
-    enhancedCanvas.height = originalHeight;
-    const ctx = enhancedCanvas.getContext('2d');
-    
-    // Fill with white background
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, enhancedCanvas.width, enhancedCanvas.height);
-    
-    // Draw the original signature
-    ctx.drawImage(canvas, 0, 0);
     
     // Load and draw the Manhattan logo
     const logo = new Image();
@@ -492,9 +479,6 @@ async function enhanceSignatureImage() {
       const logoWidth = 120;
       const logoHeight = (logo.height / logo.width) * logoWidth;
       const padding = 10;
-      
-      // Draw logo in upper left corner
-      ctx.drawImage(logo, padding, padding, logoWidth, logoHeight);
       
       // Prepare text data
       const shipmentId = currentShipmentId || 'N/A';
@@ -510,18 +494,36 @@ async function enhanceSignatureImage() {
         hour12: false
       });
       
+      // Calculate header height needed for logo + text
+      const lineHeight = 18;
+      const textLines = 4; // Shipment, BOL, Signed by, Timestamp
+      const textSpacing = 15; // Space between logo and first text line
+      const headerHeight = padding + logoHeight + textSpacing + (textLines * lineHeight) + padding;
+      
+      // Create a new canvas that's taller (original height + header height)
+      const enhancedCanvas = document.createElement('canvas');
+      enhancedCanvas.width = originalWidth;
+      enhancedCanvas.height = originalHeight + headerHeight;
+      const ctx = enhancedCanvas.getContext('2d');
+      
+      // Fill entire canvas with white background
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, enhancedCanvas.width, enhancedCanvas.height);
+      
+      // Draw logo in upper left corner of header area
+      ctx.drawImage(logo, padding, padding, logoWidth, logoHeight);
+      
       // Text settings
       ctx.font = '12px Arial, sans-serif';
       ctx.fillStyle = '#000000';
       ctx.textAlign = 'left';
       ctx.textBaseline = 'top';
       
-      // Starting position below logo
-      let textY = padding + logoHeight + 15;
-      const lineHeight = 18;
+      // Starting position below logo in header area
+      let textY = padding + logoHeight + textSpacing;
       const textX = padding;
       
-      // Draw text lines
+      // Draw text lines in header area
       ctx.fillText(`Shipment ${shipmentId}`, textX, textY);
       textY += lineHeight;
       
@@ -532,6 +534,9 @@ async function enhanceSignatureImage() {
       textY += lineHeight;
       
       ctx.fillText(timestamp, textX, textY);
+      
+      // Draw the original signature below the header area
+      ctx.drawImage(canvas, 0, headerHeight);
       
       // Convert to base64
       const enhancedDataURL = enhancedCanvas.toDataURL('image/png');
