@@ -51,3 +51,4 @@ The app is configured for Vercel deployment. Push to GitHub and connect to Verce
 - Will eventually be combined into a single action
 - Signatures are currently stored client-side only (may change in future)
 
+

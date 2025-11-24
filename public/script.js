@@ -465,6 +465,93 @@ function closeCamera() {
   }
 }
 
+// Enhance signature image with logo and metadata
+async function enhanceSignatureImage() {
+  return new Promise((resolve, reject) => {
+    const canvas = signaturePad.canvas;
+    const originalWidth = canvas.width;
+    const originalHeight = canvas.height;
+    
+    // Create a new canvas for the enhanced image
+    const enhancedCanvas = document.createElement('canvas');
+    enhancedCanvas.width = originalWidth;
+    enhancedCanvas.height = originalHeight;
+    const ctx = enhancedCanvas.getContext('2d');
+    
+    // Fill with white background
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, enhancedCanvas.width, enhancedCanvas.height);
+    
+    // Draw the original signature
+    ctx.drawImage(canvas, 0, 0);
+    
+    // Load and draw the Manhattan logo
+    const logo = new Image();
+    logo.onload = () => {
+      // Logo dimensions - scale to fit nicely in upper left
+      const logoWidth = 120;
+      const logoHeight = (logo.height / logo.width) * logoWidth;
+      const padding = 10;
+      
+      // Draw logo in upper left corner
+      ctx.drawImage(logo, padding, padding, logoWidth, logoHeight);
+      
+      // Prepare text data
+      const shipmentId = currentShipmentId || 'N/A';
+      const billOfLading = billOfLadingField.value || 'N/A';
+      const driver = driverField.value || 'N/A';
+      const timestamp = new Date().toLocaleString('en-US', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false
+      });
+      
+      // Text settings
+      ctx.font = '12px Arial, sans-serif';
+      ctx.fillStyle = '#000000';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'top';
+      
+      // Starting position below logo
+      let textY = padding + logoHeight + 15;
+      const lineHeight = 18;
+      const textX = padding;
+      
+      // Draw text lines
+      ctx.fillText(`Shipment ${shipmentId}`, textX, textY);
+      textY += lineHeight;
+      
+      ctx.fillText(`BOL: ${billOfLading}`, textX, textY);
+      textY += lineHeight;
+      
+      ctx.fillText(`Signed by: ${driver}`, textX, textY);
+      textY += lineHeight;
+      
+      ctx.fillText(timestamp, textX, textY);
+      
+      // Convert to base64
+      const enhancedDataURL = enhancedCanvas.toDataURL('image/png');
+      const base64Data = enhancedDataURL.replace(/^data:image\/png;base64,/, '');
+      resolve({ dataURL: enhancedDataURL, base64Data: base64Data });
+    };
+    
+    logo.onerror = () => {
+      console.warn('Logo failed to load, using signature without logo');
+      // If logo fails, just use the original signature
+      const dataURL = signaturePad.toDataURL('image/png');
+      const base64Data = dataURL.replace(/^data:image\/png;base64,/, '');
+      resolve({ dataURL: dataURL, base64Data: base64Data });
+    };
+    
+    // Load logo from the same directory
+    logo.src = './manhattan-logo.png';
+  });
+}
+
 // Confirm pickup (upload signature to Manhattan WMS)
 async function confirmPickup() {
   // Validate signature is not empty
@@ -492,9 +579,8 @@ async function confirmPickup() {
   showStatus('Uploading signature...', 'info');
   
   try {
-    // Get signature as base64 (strip data URL prefix)
-    const dataURL = signaturePad.toDataURL('image/png');
-    const base64Data = dataURL.replace(/^data:image\/png;base64,/, '');
+    // Get enhanced signature with logo and metadata
+    const { dataURL, base64Data } = await enhanceSignatureImage();
     
     // Generate filename: Signature_{ShipmentId}.png
     const filename = `Signature_${currentShipmentId}.png`;
@@ -517,7 +603,7 @@ async function confirmPickup() {
     // Success - show success message
     showStatus('Pickup confirmed successfully!', 'success');
     
-    // Store in localStorage as backup
+    // Store in localStorage as backup (using enhanced image)
     localStorage.setItem(`signature_${currentShipmentId}`, dataURL);
     
     // Reset UI: clear barcode input, hide sections, clear signature pad
