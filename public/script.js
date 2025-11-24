@@ -443,7 +443,7 @@ const THEMES = {
     }
   },
   manhattan: {
-    name: 'Manhattan Associates',
+    name: 'Manhattan',
     colors: {
       '--bg-color': '#f5f7fa',
       '--text-color': '#1a1a1a',
