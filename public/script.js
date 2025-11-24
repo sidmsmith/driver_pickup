@@ -562,6 +562,9 @@ function renderThemeList() {
     themeList.appendChild(btn);
   });
   console.log('Theme list rendered', themeList.children.length, 'themes');
+  console.log('Theme modal element:', themeModal);
+  console.log('Theme modal hidden attribute:', themeModal?.getAttribute('hidden'));
+  console.log('Theme modal computed display:', window.getComputedStyle(themeModal).display);
 }
 
 function isModalVisible(el) {
