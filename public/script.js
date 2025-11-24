@@ -586,9 +586,16 @@ function openThemeModal() {
   renderThemeList();
   themeModal.removeAttribute('hidden');
   themeModal.style.display = 'flex'; // Explicitly set display
+  themeModal.style.visibility = 'visible';
+  themeModal.style.opacity = '1';
+  themeModal.style.zIndex = '1001';
   showBackdrop();
   console.log('Theme modal opened', themeModal);
   console.log('Theme modal computed display after open:', window.getComputedStyle(themeModal).display);
+  console.log('Theme modal computed visibility:', window.getComputedStyle(themeModal).visibility);
+  console.log('Theme modal computed opacity:', window.getComputedStyle(themeModal).opacity);
+  console.log('Theme modal computed z-index:', window.getComputedStyle(themeModal).zIndex);
+  console.log('Theme modal parent:', themeModal.parentElement);
 }
 
 function closeThemeModal() {
