@@ -391,7 +391,6 @@ function clearSignature() {
 }
 
 // Download signature
-// Download signature removed - functionality combined into confirmPickup
 
 // Event Listeners
 orgInput.addEventListener('keypress', (e) => {
