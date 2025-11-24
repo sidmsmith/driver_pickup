@@ -226,7 +226,8 @@ async function validateBarcode(shipmentId) {
     });
   }
   
-  showStatus('Barcode validated successfully!', 'success');
+  // Hide status message on success (UI change is obvious)
+  hideStatus();
 }
 
 // Initialize QuaggaJS for barcode scanning
@@ -333,7 +334,8 @@ function downloadSignature() {
   
   const dataURL = signaturePad.toDataURL('image/png');
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
-  const filename = `signature_${timestamp}_${currentShipmentId || 'unknown'}.png`;
+  // Format: SHI000000020_Signature_2025-11-24T17-30-20.png
+  const filename = `${currentShipmentId || 'unknown'}_Signature_${timestamp}.png`;
   
   const link = document.createElement('a');
   link.download = filename;
