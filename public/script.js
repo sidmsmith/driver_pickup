@@ -585,13 +585,16 @@ function openThemeModal() {
   if (!themeModal) return;
   renderThemeList();
   themeModal.removeAttribute('hidden');
+  themeModal.style.display = 'flex'; // Explicitly set display
   showBackdrop();
   console.log('Theme modal opened', themeModal);
+  console.log('Theme modal computed display after open:', window.getComputedStyle(themeModal).display);
 }
 
 function closeThemeModal() {
   if (!themeModal) return;
   themeModal.setAttribute('hidden', '');
+  themeModal.style.display = 'none'; // Explicitly set display
   hideBackdropIfNone();
   console.log('Theme modal closed');
 }
