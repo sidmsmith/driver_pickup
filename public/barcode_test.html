@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Barcode Test - SHI000000020</title>
   <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+  <script src="https://unpkg.com/qrcode@1.5.3/build/qrcode.min.js"></script>
   <style>
     * {
       box-sizing: border-box;
@@ -144,51 +144,107 @@
   <script>
     const barcodeValue = "SHI000000020";
     
-    // Generate QR Code (best for screen scanning - has error correction built in)
-    QRCode.toCanvas(document.getElementById('qrcode'), barcodeValue, {
-      width: 400,
-      margin: 2,
-      color: {
-        dark: '#000000',
-        light: '#FFFFFF'
-      },
-      errorCorrectionLevel: 'M' // Medium error correction (15% recovery)
-    }, function (error) {
-      if (error) {
-        console.error('QR Code generation error:', error);
+    // Wait for DOM and libraries to be ready
+    function generateBarcodes() {
+      const qrCanvas = document.getElementById('qrcode');
+      
+      // Check if libraries are loaded
+      if (typeof QRCode === 'undefined') {
+        console.error('QRCode library not loaded');
+        qrCanvas.innerHTML = '<p style="color: red; padding: 20px;">Error: QRCode library failed to load. Please refresh the page.</p>';
       } else {
-        console.log('QR Code generated successfully');
+        console.log('QRCode library loaded, generating QR code...');
+        // Generate QR Code (best for screen scanning - has error correction built in)
+        try {
+          QRCode.toCanvas(qrCanvas, barcodeValue, {
+            width: 400,
+            margin: 2,
+            color: {
+              dark: '#000000',
+              light: '#FFFFFF'
+            },
+            errorCorrectionLevel: 'M' // Medium error correction (15% recovery)
+          }, function (error) {
+            if (error) {
+              console.error('QR Code generation error:', error);
+              qrCanvas.innerHTML = '<p style="color: red; padding: 20px;">Error generating QR code: ' + error.message + '</p>';
+            } else {
+              console.log('QR Code generated successfully');
+            }
+          });
+        } catch (error) {
+          console.error('QR Code generation exception:', error);
+          qrCanvas.innerHTML = '<p style="color: red; padding: 20px;">Exception: ' + error.message + '</p>';
+        }
       }
-    });
+      
+      // Check if JsBarcode is loaded
+      if (typeof JsBarcode === 'undefined') {
+        console.error('JsBarcode library not loaded');
+        document.getElementById('barcode-code128').innerHTML = '<p style="color: red;">Error: JsBarcode library failed to load.</p>';
+        document.getElementById('barcode-code39').innerHTML = '<p style="color: red;">Error: JsBarcode library failed to load.</p>';
+      } else {
+        // Generate Code 128 barcode (larger, thicker bars for better scanning)
+        try {
+          JsBarcode("#barcode-code128", barcodeValue, {
+            format: "CODE128",
+            width: 3,  // Thicker bars
+            height: 150,  // Taller barcode
+            displayValue: true,
+            fontSize: 24,
+            margin: 15,
+            background: "#ffffff",
+            lineColor: "#000000",
+            textMargin: 5
+          });
+          console.log('Code 128 barcode generated successfully');
+        } catch (error) {
+          console.error('Code 128 generation error:', error);
+        }
+        
+        // Generate Code 39 barcode (alternative format)
+        try {
+          JsBarcode("#barcode-code39", barcodeValue, {
+            format: "CODE39",
+            width: 3,
+            height: 150,
+            displayValue: true,
+            fontSize: 24,
+            margin: 15,
+            background: "#ffffff",
+            lineColor: "#000000",
+            textMargin: 5
+          });
+          console.log('Code 39 barcode generated successfully');
+        } catch (error) {
+          console.error('Code 39 generation error:', error);
+        }
+      }
+      
+      // Log for debugging
+      console.log('Barcode test page loaded. Expected value:', barcodeValue);
+    }
     
-    // Generate Code 128 barcode (larger, thicker bars for better scanning)
-    JsBarcode("#barcode-code128", barcodeValue, {
-      format: "CODE128",
-      width: 3,  // Thicker bars
-      height: 150,  // Taller barcode
-      displayValue: true,
-      fontSize: 24,
-      margin: 15,
-      background: "#ffffff",
-      lineColor: "#000000",
-      textMargin: 5
-    });
+    // Wait for DOM and libraries to be ready
+    function init() {
+      // Check if libraries are loaded, retry if not
+      if (typeof QRCode === 'undefined' || typeof JsBarcode === 'undefined') {
+        console.log('Libraries not ready yet, retrying...');
+        setTimeout(init, 200);
+        return;
+      }
+      
+      console.log('All libraries loaded, generating barcodes...');
+      generateBarcodes();
+    }
     
-    // Generate Code 39 barcode (alternative format)
-    JsBarcode("#barcode-code39", barcodeValue, {
-      format: "CODE39",
-      width: 3,
-      height: 150,
-      displayValue: true,
-      fontSize: 24,
-      margin: 15,
-      background: "#ffffff",
-      lineColor: "#000000",
-      textMargin: 5
-    });
-    
-    // Log for debugging
-    console.log('Barcode test page loaded. Expected value:', barcodeValue);
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', function() {
+        setTimeout(init, 100);
+      });
+    } else {
+      setTimeout(init, 100);
+    }
   </script>
 </body>
 </html>
