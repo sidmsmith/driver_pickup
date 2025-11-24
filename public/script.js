@@ -134,6 +134,12 @@ async function validateBarcode(shipmentId) {
   if (!res.success) {
     showStatus(res.error || 'Barcode validation failed', 'error');
     shipmentInfo.style.display = 'none';
+    
+    // Hide signature section on validation failure
+    const signatureSection = document.querySelector('.signature-section');
+    if (signatureSection) {
+      signatureSection.style.display = 'none';
+    }
     return;
   }
   
