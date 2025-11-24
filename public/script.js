@@ -17,6 +17,7 @@ const cameraViewport = document.getElementById('cameraViewport');
 const saveSignatureBtn = document.getElementById('saveSignatureBtn');
 const clearSignatureBtn = document.getElementById('clearSignatureBtn');
 const downloadSignatureBtn = document.getElementById('downloadSignatureBtn');
+const authStatusEl = document.getElementById('authStatus');
 
 let token = null;
 let currentOrg = null; // Store org after authentication
@@ -27,8 +28,40 @@ let isScanning = false;
 // Initialize Signature Pad
 function initSignaturePad() {
   const canvas = document.getElementById('signatureCanvas');
-  if (!canvas) return;
+  if (!canvas) {
+    console.warn('Signature canvas not found');
+    return;
+  }
   
+  // Ensure signature section is visible
+  const signatureSection = document.querySelector('.signature-section');
+  if (!signatureSection || signatureSection.style.display === 'none') {
+    console.warn('Signature section is not visible');
+    return;
+  }
+  
+  // Clear existing signature pad if it exists
+  if (signaturePad) {
+    signaturePad.clear();
+    signaturePad.off(); // Remove event listeners
+  }
+  
+  // Get computed style to get actual dimensions
+  const computedStyle = window.getComputedStyle(canvas);
+  const width = parseInt(computedStyle.width, 10) || canvas.offsetWidth || 400;
+  const height = parseInt(computedStyle.height, 10) || canvas.offsetHeight || 200;
+  
+  // Adjust canvas size for high DPI displays
+  const ratio = Math.max(window.devicePixelRatio || 1, 1);
+  canvas.width = width * ratio;
+  canvas.height = height * ratio;
+  canvas.style.width = width + 'px';
+  canvas.style.height = height + 'px';
+  
+  const ctx = canvas.getContext('2d');
+  ctx.scale(ratio, ratio);
+  
+  // Create signature pad
   signaturePad = new SignaturePad(canvas, {
     backgroundColor: '#ffffff',
     penColor: '#000000',
@@ -37,17 +70,29 @@ function initSignaturePad() {
     throttle: 16
   });
   
-  // Adjust canvas size for high DPI displays
+  // Handle window resize
   function resizeCanvas() {
+    const computedStyle = window.getComputedStyle(canvas);
+    const newWidth = parseInt(computedStyle.width, 10) || canvas.offsetWidth || 400;
+    const newHeight = parseInt(computedStyle.height, 10) || canvas.offsetHeight || 200;
+    
     const ratio = Math.max(window.devicePixelRatio || 1, 1);
-    canvas.width = canvas.offsetWidth * ratio;
-    canvas.height = canvas.offsetHeight * ratio;
-    canvas.getContext('2d').scale(ratio, ratio);
-    signaturePad.clear(); // Clear after resize
+    canvas.width = newWidth * ratio;
+    canvas.height = newHeight * ratio;
+    canvas.style.width = newWidth + 'px';
+    canvas.style.height = newHeight + 'px';
+    
+    const ctx = canvas.getContext('2d');
+    ctx.scale(ratio, ratio);
+    
+    if (signaturePad) {
+      signaturePad.clear();
+    }
   }
   
   window.addEventListener('resize', resizeCanvas);
-  resizeCanvas();
+  
+  console.log('Signature pad initialized', { width, height, ratio });
 }
 
 // Show status message
@@ -59,6 +104,21 @@ function showStatus(message, type = 'info') {
 
 function hideStatus() {
   statusEl.style.display = 'none';
+}
+
+// Show auth status message (in auth section)
+function showAuthStatus(message, type = 'info') {
+  if (authStatusEl) {
+    authStatusEl.textContent = message;
+    authStatusEl.className = `status ${type}`;
+    authStatusEl.style.display = 'block';
+  }
+}
+
+function hideAuthStatus() {
+  if (authStatusEl) {
+    authStatusEl.style.display = 'none';
+  }
 }
 
 // API call helper
@@ -88,32 +148,31 @@ function checkAutoAuth() {
 async function authenticate() {
   const org = orgInput.value.trim();
   if (!org) {
-    showStatus('ORG required', 'error');
+    showAuthStatus('ORG required', 'error');
     return;
   }
   
-  showStatus('Authenticating...', 'info');
+  showAuthStatus('Authenticating...', 'info');
   
   try {
     const res = await apiCall('auth', { org });
     
     if (!res.success) {
-      showStatus('Authentication Failed!', 'error');
+      showAuthStatus('Authentication Failed!', 'error');
       mainUI.style.display = 'none';
       return;
     }
     
     token = res.token;
     currentOrg = org; // Store org for future API calls
-    hideStatus(); // Hide status on success (UI change is obvious)
+    hideAuthStatus(); // Hide auth status on success
     authSection.style.display = 'none';
     mainUI.style.display = 'block';
     
-    // Initialize signature pad after UI is shown
-    setTimeout(initSignaturePad, 100);
+    // Don't initialize signature pad here - it will be initialized when signature section is shown
   } catch (error) {
     console.error('Authentication error:', error);
-    showStatus('Authentication Failed!', 'error');
+    showAuthStatus('Authentication Failed!', 'error');
     mainUI.style.display = 'none';
   }
 }
@@ -157,6 +216,14 @@ async function validateBarcode(shipmentId) {
   const signatureSection = document.querySelector('.signature-section');
   if (signatureSection) {
     signatureSection.style.display = 'block';
+    
+    // Initialize signature pad when section becomes visible
+    // Use requestAnimationFrame to ensure DOM is ready
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        initSignaturePad();
+      }, 100);
+    });
   }
   
   showStatus('Barcode validated successfully!', 'success');
