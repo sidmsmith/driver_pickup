@@ -17,6 +17,10 @@ const cameraViewport = document.getElementById('cameraViewport');
 const confirmPickupBtn = document.getElementById('confirmPickupBtn');
 const clearSignatureBtn = document.getElementById('clearSignatureBtn');
 const authStatusEl = document.getElementById('authStatus');
+const themeSelectorBtn = document.getElementById('themeSelectorBtn');
+const themeModal = document.getElementById('themeModal');
+const themeList = document.getElementById('themeList');
+const modalBackdrop = document.getElementById('modalBackdrop');
 
 let token = null;
 let currentOrg = null; // Store org after authentication
@@ -391,6 +395,197 @@ function clearSignature() {
 }
 
 // Download signature
+
+// Theme Management
+const DEFAULT_THEME_KEY = 'minimal-light';
+
+const THEMES = {
+  default: {
+    name: 'Default (Dark)',
+    colors: {
+      '--bg-color': '#121212',
+      '--text-color': '#e0e0e0',
+      '--text-muted': '#bbbbbb',
+      '--card-bg': '#1e1e1e',
+      '--border-color': '#333',
+      '--input-bg': '#2d2d2d',
+      '--input-border': '#444',
+      '--input-focus-bg': '#333',
+      '--input-focus-border': '#0d6efd',
+      '--input-focus-shadow': 'rgba(13, 110, 253, 0.25)',
+      '--primary-color': '#0d6efd',
+      '--primary-hover': '#0b5ed7',
+      '--success-color': '#28a745',
+      '--danger-color': '#dc3545',
+      '--header-bg': '#111827',
+      '--header-text': '#e5e7eb'
+    }
+  },
+  loves: {
+    name: "Love's Travel Stops",
+    colors: {
+      '--bg-color': '#f8f9fa',
+      '--text-color': '#212529',
+      '--text-muted': '#6c757d',
+      '--card-bg': '#ffffff',
+      '--border-color': '#dee2e6',
+      '--input-bg': '#f5f5f5',
+      '--input-border': '#ced4da',
+      '--input-focus-bg': '#ffffff',
+      '--input-focus-border': '#E31837',
+      '--input-focus-shadow': 'rgba(227, 24, 55, 0.25)',
+      '--primary-color': '#E31837',
+      '--primary-hover': '#C0142D',
+      '--success-color': '#28a745',
+      '--danger-color': '#dc3545',
+      '--header-bg': '#f1f5f9',
+      '--header-text': '#1f2933'
+    }
+  },
+  manhattan: {
+    name: 'Manhattan Associates',
+    colors: {
+      '--bg-color': '#f5f7fa',
+      '--text-color': '#1a1a1a',
+      '--text-muted': '#4a5568',
+      '--card-bg': '#ffffff',
+      '--border-color': '#e1e8ed',
+      '--input-bg': '#f0f2f5',
+      '--input-border': '#cbd5e0',
+      '--input-focus-bg': '#ffffff',
+      '--input-focus-border': '#0066cc',
+      '--input-focus-shadow': 'rgba(0, 102, 204, 0.25)',
+      '--primary-color': '#0066cc',
+      '--primary-hover': '#0052a3',
+      '--success-color': '#28a745',
+      '--danger-color': '#dc3545',
+      '--header-bg': '#dce7f5',
+      '--header-text': '#0f172a'
+    }
+  },
+  msc: {
+    name: 'MSC Industrial',
+    colors: {
+      '--bg-color': '#fafafa',
+      '--text-color': '#1a1a1a',
+      '--text-muted': '#757575',
+      '--card-bg': '#ffffff',
+      '--border-color': '#e0e0e0',
+      '--input-bg': '#f0f0f0',
+      '--input-border': '#bdbdbd',
+      '--input-focus-bg': '#ffffff',
+      '--input-focus-border': '#003d82',
+      '--input-focus-shadow': 'rgba(0,61,130,0.25)',
+      '--primary-color': '#003d82',
+      '--primary-hover': '#002d5f',
+      '--success-color': '#28a745',
+      '--danger-color': '#dc3545',
+      '--header-bg': '#e5e7eb',
+      '--header-text': '#1f1f1f'
+    }
+  },
+  'corporate-blue': {
+    name: 'Corporate Blue',
+    colors: {
+      '--bg-color': '#e3f2fd',
+      '--text-color': '#0d47a1',
+      '--text-muted': '#1976d2',
+      '--card-bg': '#ffffff',
+      '--border-color': '#90caf9',
+      '--input-bg': '#f5f5f5',
+      '--input-border': '#90caf9',
+      '--input-focus-bg': '#ffffff',
+      '--input-focus-border': '#1565c0',
+      '--input-focus-shadow': 'rgba(21,101,192,0.25)',
+      '--primary-color': '#1565c0',
+      '--primary-hover': '#0d47a1',
+      '--success-color': '#28a745',
+      '--danger-color': '#dc3545',
+      '--header-bg': '#bbdefb',
+      '--header-text': '#0d47a1'
+    }
+  },
+  'minimal-light': {
+    name: 'Minimal Light',
+    colors: {
+      '--bg-color': '#ffffff',
+      '--text-color': '#1f2933',
+      '--text-muted': '#616e7c',
+      '--card-bg': '#f8fafc',
+      '--border-color': '#d9e2ec',
+      '--input-bg': '#ffffff',
+      '--input-border': '#cbd5e0',
+      '--input-focus-bg': '#ffffff',
+      '--input-focus-border': '#5a67d8',
+      '--input-focus-shadow': 'rgba(90,103,216,0.25)',
+      '--primary-color': '#5a67d8',
+      '--primary-hover': '#4c51bf',
+      '--success-color': '#28a745',
+      '--danger-color': '#dc3545',
+      '--header-bg': '#d9e2ec',
+      '--header-text': '#1f2933'
+    }
+  }
+};
+
+function applyTheme(themeKey) {
+  const theme = THEMES[themeKey];
+  if (!theme) return;
+  
+  Object.entries(theme.colors).forEach(([prop, value]) => {
+    document.documentElement.style.setProperty(prop, value);
+  });
+  
+  localStorage.setItem('driverPickupTheme', themeKey);
+}
+
+function loadTheme() {
+  const saved = localStorage.getItem('driverPickupTheme') || DEFAULT_THEME_KEY;
+  applyTheme(saved);
+}
+
+function renderThemeList() {
+  if (!themeList) return;
+  const current = localStorage.getItem('driverPickupTheme') || DEFAULT_THEME_KEY;
+  themeList.innerHTML = '';
+  Object.entries(THEMES).forEach(([key, theme]) => {
+    const btn = document.createElement('button');
+    btn.textContent = theme.name;
+    btn.className = key === current ? 'active' : '';
+    btn.onclick = () => {
+      applyTheme(key);
+      closeThemeModal();
+    };
+    themeList.appendChild(btn);
+  });
+}
+
+function isModalVisible(el) {
+  return el && !el.hidden;
+}
+
+function showBackdrop() {
+  if (modalBackdrop) modalBackdrop.hidden = false;
+}
+
+function hideBackdropIfNone() {
+  if (modalBackdrop && !isModalVisible(themeModal)) {
+    modalBackdrop.hidden = true;
+  }
+}
+
+function openThemeModal() {
+  if (!themeModal) return;
+  renderThemeList();
+  themeModal.hidden = false;
+  showBackdrop();
+}
+
+function closeThemeModal() {
+  if (!themeModal) return;
+  themeModal.hidden = true;
+  hideBackdropIfNone();
+}
 
 // Event Listeners
 orgInput.addEventListener('keypress', (e) => {
