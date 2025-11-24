@@ -256,6 +256,52 @@
       #signatureCanvas {
         height: 150px;
       }
+      .theme-selector-btn { display: none; }
+    }
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      /* Keep element for click-to-close behavior, but remove visual overlay */
+      background: transparent;
+      backdrop-filter: none;
+      z-index: 998;
+    }
+    .modal {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 999;
+    }
+    .modal-content {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 1.5rem;
+      max-width: 360px;
+      width: 90%;
+      text-align: center;
+      color: var(--text-color);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+    }
+    .modal-content h4 { margin-bottom: 0.75rem; color: var(--primary-color); font-weight: 600; }
+    .theme-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    .theme-list button {
+      border: 1px solid var(--border-color);
+      background: var(--card-bg);
+      color: var(--text-color);
+      padding: 0.5rem 0.75rem;
+      border-radius: 8px;
+      text-align: left;
+    }
+    .theme-list button.active {
+      background: var(--primary-color);
+      color: #fff;
     }
   </style>
 </head>
