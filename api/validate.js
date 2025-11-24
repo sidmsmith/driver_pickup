@@ -199,7 +199,7 @@ export default async function handler(req, res) {
       ObjectTypeId: "Shipment",
       ObjectId: shipmentId,
       DocumentCategoryId: "DriverSignature",
-      Action: "overwrite",
+      Action: "overWrite",
       Description: "Uploaded via API",
       DocumentManagerFiles: [
         {
