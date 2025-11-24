@@ -27,15 +27,36 @@
     };
     
     window.loadQRCodeAlternative = function() {
-      if (typeof QRCode === 'undefined' && !window.qrcodeLoading) {
+      // Safely check if QRCode exists
+      let qrExists = false;
+      try {
+        qrExists = typeof QRCode !== 'undefined' || typeof window.QRCode !== 'undefined';
+      } catch (e) {
+        qrExists = false;
+      }
+      
+      if (!qrExists && !window.qrcodeLoading) {
         window.qrcodeLoading = true;
-        console.log('Loading QRCode from alternative CDN...');
+        console.log('Loading QRCode from alternative CDN (unpkg)...');
         const script = document.createElement('script');
-        script.src = 'https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js';
+        script.src = 'https://unpkg.com/qrcode@1.5.3/build/qrcode.min.js';
         script.onerror = function() {
-          console.error('All QRCode CDNs failed');
-          window.qrcodeFailed = true;
-          window.qrcodeLoading = false;
+          console.error('All QRCode CDNs failed - trying QRious as fallback...');
+          // Try QRious library as last resort
+          const qriousScript = document.createElement('script');
+          qriousScript.src = 'https://cdn.jsdelivr.net/npm/qrious@4.0.2/dist/qrious.min.js';
+          qriousScript.onerror = function() {
+            console.error('All QR code libraries failed');
+            window.qrcodeFailed = true;
+            window.qrcodeLoading = false;
+          };
+          qriousScript.onload = function() {
+            console.log('QRious loaded as fallback');
+            window.qrcodeLoading = false;
+            // QRious uses different API, we'll handle it in generateBarcodes
+            window.usingQRious = true;
+          };
+          document.head.appendChild(qriousScript);
         };
         script.onload = function() {
           console.log('QRCode loaded from alternative CDN');
@@ -49,8 +70,9 @@
   <!-- Try multiple CDN sources for reliability -->
   <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js" 
           onerror="console.error('JsBarcode (jsdelivr) failed, trying alternative...'); if (typeof loadJsBarcodeAlternative !== 'undefined') loadJsBarcodeAlternative();"></script>
-  <script src="https://unpkg.com/qrcode@1.5.3/build/qrcode.min.js"
-          onerror="console.error('QRCode (unpkg) failed, trying alternative...'); if (typeof loadQRCodeAlternative !== 'undefined') loadQRCodeAlternative();"></script>
+  <!-- Try multiple QR code library CDNs -->
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"
+          onerror="console.error('QRCode (jsdelivr) failed, trying alternative...'); if (typeof loadQRCodeAlternative !== 'undefined') loadQRCodeAlternative();"></script>
   <style>
     * {
       box-sizing: border-box;
@@ -207,13 +229,46 @@
       // Debug first
       debugLibraries();
       
-      // Check if libraries are loaded - try multiple ways
-      const QRCodeLib = window.QRCode || QRCode;
-      const JsBarcodeLib = window.JsBarcode || JsBarcode;
+      // Check if libraries are loaded - try multiple ways (safely)
+      let QRCodeLib = null;
+      let JsBarcodeLib = null;
+      
+      try {
+        QRCodeLib = window.QRCode || (typeof QRCode !== 'undefined' ? QRCode : null);
+      } catch (e) {
+        QRCodeLib = null;
+      }
+      
+      try {
+        JsBarcodeLib = window.JsBarcode || (typeof JsBarcode !== 'undefined' ? JsBarcode : null);
+      } catch (e) {
+        JsBarcodeLib = null;
+      }
+      
+      // Try QRious if QRCode failed
+      if (!QRCodeLib && window.usingQRious && typeof QRious !== 'undefined') {
+        try {
+          const qr = new QRious({
+            value: barcodeValue,
+            size: 400,
+            level: 'M'
+          });
+          const ctx = qrCanvas.getContext('2d');
+          const img = new Image();
+          img.onload = function() {
+            ctx.drawImage(img, 0, 0);
+          };
+          img.src = qr.toDataURL();
+          console.log('QR Code generated using QRious fallback');
+          return; // Success with QRious
+        } catch (error) {
+          console.error('QRious generation failed:', error);
+        }
+      }
       
       if (!QRCodeLib) {
         console.error('QRCode library not loaded');
-        qrCanvas.innerHTML = '<p style="color: red; padding: 20px;">Error: QRCode library failed to load. Please refresh the page.<br>Check browser console (F12) for details.</p>';
+        qrCanvas.innerHTML = '<p style="color: red; padding: 20px;">Error: QRCode library failed to load from all CDNs.<br>Please check your internet connection or try refreshing the page.<br><br>You can still test with the Code 128 and Code 39 barcodes below.</p>';
       } else {
         console.log('QRCode library loaded, generating QR code...');
         // Generate QR Code (best for screen scanning - has error correction built in)
@@ -296,8 +351,21 @@
     function init() {
       retryCount++;
       
-      const qrAvailable = typeof (window.QRCode || QRCode) !== 'undefined';
-      const jsbAvailable = typeof (window.JsBarcode || JsBarcode) !== 'undefined';
+      // Safely check if libraries are available (don't reference undefined variables)
+      let qrAvailable = false;
+      let jsbAvailable = false;
+      
+      try {
+        qrAvailable = typeof window.QRCode !== 'undefined' || (typeof QRCode !== 'undefined');
+      } catch (e) {
+        qrAvailable = false;
+      }
+      
+      try {
+        jsbAvailable = typeof window.JsBarcode !== 'undefined' || (typeof JsBarcode !== 'undefined');
+      } catch (e) {
+        jsbAvailable = false;
+      }
       
       // Check for load failures
       if (window.jsbarcodeFailed && !jsbAvailable) {
