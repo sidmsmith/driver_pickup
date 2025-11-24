@@ -792,6 +792,16 @@ closeCameraBtn.addEventListener('click', closeCamera);
 confirmPickupBtn.addEventListener('click', confirmPickup);
 clearSignatureBtn.addEventListener('click', clearSignature);
 
+// Error modal close button
+errorModalCloseBtn?.addEventListener('click', hideErrorModal);
+
+// Close error modal when clicking outside
+errorModal?.addEventListener('click', (e) => {
+  if (e.target === errorModal) {
+    hideErrorModal();
+  }
+});
+
 // Theme selector
 themeSelectorBtn?.addEventListener('click', openThemeModal);
 
