@@ -205,6 +205,9 @@ async function authenticate() {
     
     // If ShipmentId was provided in URL, automatically validate it
     if (window.urlShipmentId) {
+      // Pre-populate the barcode input field with the ShipmentId from URL
+      barcodeInput.value = window.urlShipmentId;
+      
       // Small delay to ensure UI is ready
       setTimeout(() => {
         validateBarcode(window.urlShipmentId);
