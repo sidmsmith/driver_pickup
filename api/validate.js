@@ -71,7 +71,19 @@ async function apiCall(method, path, token, org, body = null) {
     headers, 
     body: body ? JSON.stringify(body) : undefined 
   });
-  return res.ok ? await res.json() : { error: await res.text() };
+  
+  // Try to parse as JSON first, fallback to text
+  const text = await res.text();
+  let jsonResponse;
+  try {
+    jsonResponse = JSON.parse(text);
+  } catch (e) {
+    // If not JSON, return as text error
+    return { error: text, success: false };
+  }
+  
+  // Return the full response (success or error)
+  return jsonResponse;
 }
 
 // Export handler
@@ -199,21 +211,45 @@ export default async function handler(req, res) {
       ]
     };
 
-    console.log('[upload_signature] Request', JSON.stringify({ 
+    // Log full payload (but truncate fileData for readability)
+    const payloadForLog = {
+      ...payload,
+      DocumentManagerFiles: payload.DocumentManagerFiles.map(file => ({
+        ...file,
+        FileData: file.FileData ? `${file.FileData.substring(0, 50)}... (${file.FileData.length} chars)` : 'empty'
+      }))
+    };
+    
+    console.log('[upload_signature] Full Request Payload:', JSON.stringify(payloadForLog, null, 2));
+    console.log('[upload_signature] Headers:', JSON.stringify({ 
       org: requestOrg, 
-      shipmentId, 
-      filename 
+      orgUpper: requestOrg.toUpperCase(),
+      selectedLocation: `${requestOrg.toUpperCase()}-DM1`
     }, null, 2));
     
     const uploadRes = await apiCall('POST', '/document-manager/api/document-manager/uploadDocuments', token, requestOrg, payload);
-    console.log('[upload_signature] Response', JSON.stringify(uploadRes, null, 2));
+    console.log('[upload_signature] Full Response:', JSON.stringify(uploadRes, null, 2));
 
-    if (uploadRes.error || !uploadRes.success) {
-      const errorMsg = uploadRes.error || uploadRes.message || JSON.stringify(uploadRes);
+    // Check for error - Manhattan API returns success:false on error
+    if (!uploadRes.success) {
+      // Extract error message from Manhattan response structure
+      let errorMsg = 'Document upload failed';
+      if (uploadRes.message) {
+        errorMsg = uploadRes.message;
+      } else if (uploadRes.messages && uploadRes.messages.Message && uploadRes.messages.Message.length > 0) {
+        errorMsg = uploadRes.messages.Message[0].Description || uploadRes.messages.Message[0].Code || errorMsg;
+      } else if (uploadRes.error) {
+        errorMsg = uploadRes.error;
+      }
+      
+      // Include full response for troubleshooting
+      const fullError = JSON.stringify(uploadRes);
+      console.log('[upload_signature] Error Details:', fullError);
+      
       await sendHA("signature_upload_failed", requestOrg, { shipmentId, error: errorMsg });
       return res.json({ 
         success: false, 
-        error: errorMsg 
+        error: fullError // Return full response for troubleshooting
       });
     }
 
