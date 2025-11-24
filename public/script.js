@@ -93,22 +93,29 @@ async function authenticate() {
   }
   
   showStatus('Authenticating...', 'info');
-  const res = await apiCall('auth', { org });
   
-  if (!res.success) {
-    showStatus(res.error || 'Authentication failed', 'error');
+  try {
+    const res = await apiCall('auth', { org });
+    
+    if (!res.success) {
+      showStatus('Authentication Failed!', 'error');
+      mainUI.style.display = 'none';
+      return;
+    }
+    
+    token = res.token;
+    currentOrg = org; // Store org for future API calls
+    hideStatus(); // Hide status on success (UI change is obvious)
+    authSection.style.display = 'none';
+    mainUI.style.display = 'block';
+    
+    // Initialize signature pad after UI is shown
+    setTimeout(initSignaturePad, 100);
+  } catch (error) {
+    console.error('Authentication error:', error);
+    showStatus('Authentication Failed!', 'error');
     mainUI.style.display = 'none';
-    return;
   }
-  
-  token = res.token;
-  currentOrg = org; // Store org for future API calls
-  showStatus('Authenticated!', 'success');
-  authSection.style.display = 'none';
-  mainUI.style.display = 'block';
-  
-  // Initialize signature pad after UI is shown
-  setTimeout(initSignaturePad, 100);
 }
 
 // Validate barcode
@@ -139,6 +146,13 @@ async function validateBarcode(shipmentId) {
   driverField.value = ''; // Clear driver field
   
   shipmentInfo.style.display = 'block';
+  
+  // Show signature section after successful validation
+  const signatureSection = document.querySelector('.signature-section');
+  if (signatureSection) {
+    signatureSection.style.display = 'block';
+  }
+  
   showStatus('Barcode validated successfully!', 'success');
 }
 
