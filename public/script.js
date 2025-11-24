@@ -138,15 +138,23 @@ async function apiCall(action, data = {}) {
   }).then(r => r.json());
 }
 
-// Auto-authenticate from URL parameter
+// Auto-authenticate from URL parameter and check for ShipmentId
 function checkAutoAuth() {
   const urlParams = new URLSearchParams(window.location.search);
   const urlOrg = urlParams.get('Organization');
+  const urlShipmentId = urlParams.get('ShipmentId');
   
+  // Store ShipmentId from URL for later use (after authentication)
+  if (urlShipmentId && urlShipmentId.trim()) {
+    window.urlShipmentId = urlShipmentId.trim();
+  }
+  
+  // Always require authentication - if Organization is provided, auto-authenticate
   if (urlOrg && urlOrg.trim()) {
     orgInput.value = urlOrg.trim();
     authenticate();
   }
+  // If no Organization in URL, user will need to authenticate manually
 }
 
 // Authenticate
@@ -174,6 +182,16 @@ async function authenticate() {
     authSection.style.display = 'none';
     mainUI.style.display = 'block';
     
+    // If ShipmentId was provided in URL, automatically validate it
+    if (window.urlShipmentId) {
+      // Small delay to ensure UI is ready
+      setTimeout(() => {
+        validateBarcode(window.urlShipmentId);
+        // Clear the stored value so we don't re-validate on subsequent auths
+        window.urlShipmentId = null;
+      }, 300);
+    }
+    
     // Don't initialize signature pad here - it will be initialized when signature section is shown
   } catch (error) {
     console.error('Authentication error:', error);
@@ -196,6 +214,7 @@ async function validateBarcode(shipmentId) {
   });
   
   if (!res.success) {
+    // Show same error message as before
     showStatus(res.error || 'Barcode validation failed', 'error');
     shipmentInfo.style.display = 'none';
     
@@ -204,6 +223,11 @@ async function validateBarcode(shipmentId) {
     if (signatureSection) {
       signatureSection.style.display = 'none';
     }
+    
+    // Ensure barcode input is visible and ready for user to enter new ShipmentId
+    // (This handles the case where ShipmentId came from URL and was invalid)
+    barcodeInput.focus();
+    
     return;
   }
   
@@ -485,6 +509,15 @@ async function confirmPickup() {
         signaturePad.clear();
       }
       hideStatus();
+      
+      // Remove ShipmentId from URL if it was there (after processing first shipment)
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.has('ShipmentId')) {
+        urlParams.delete('ShipmentId');
+        const newUrl = window.location.pathname + (urlParams.toString() ? '?' + urlParams.toString() : '');
+        window.history.replaceState({}, '', newUrl);
+      }
+      
       // Focus back on barcode input for next scan
       barcodeInput.focus();
     }, 1500); // Wait 1.5 seconds to show success message
