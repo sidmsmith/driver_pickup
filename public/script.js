@@ -28,6 +28,7 @@ let signaturePad = null;
 let currentShipmentId = null;
 let isScanning = false;
 let qrScanInterval = null; // For QR code scanning
+let cameraModalHistoryState = null; // Track if we pushed a history state for camera modal
 
 // Initialize Signature Pad
 function initSignaturePad() {
@@ -373,6 +374,14 @@ function processScannedCode(code, source) {
 // Open camera modal
 function openCamera() {
   cameraModal.classList.add('active');
+  
+  // Push a history state to intercept back button
+  // This prevents users from accidentally navigating away
+  if (history.pushState) {
+    cameraModalHistoryState = { modal: 'camera', timestamp: Date.now() };
+    history.pushState(cameraModalHistoryState, '', window.location.href);
+  }
+  
   setTimeout(() => {
     initBarcodeScanner();
   }, 100);
@@ -393,6 +402,14 @@ function closeCamera() {
   
   cameraModal.classList.remove('active');
   cameraViewport.innerHTML = ''; // Clear viewport
+  
+  // Remove the history state we added when opening the modal
+  // If user clicked Close button (not back button), we need to clean up the history state
+  if (cameraModalHistoryState && history.state && history.state.modal === 'camera') {
+    // Replace the state with current state to remove our modal state from history
+    history.replaceState(null, '', window.location.href);
+    cameraModalHistoryState = null;
+  }
 }
 
 // Confirm pickup (upload signature to Manhattan WMS)
@@ -730,6 +747,33 @@ modalBackdrop?.addEventListener('click', () => {
 cameraModal.addEventListener('click', (e) => {
   if (e.target === cameraModal) {
     closeCamera();
+  }
+});
+
+// Handle browser back button - intercept when camera modal is open
+window.addEventListener('popstate', (event) => {
+  // If camera modal is open and user pressed back button, close the modal instead
+  if (cameraModal.classList.contains('active')) {
+    // User pressed back while modal is open - close modal instead of navigating
+    // Don't call closeCamera() here because it will try to clean up history again
+    // Just close the modal directly
+    if (isScanning) {
+      Quagga.stop();
+      isScanning = false;
+    }
+    if (qrScanInterval) {
+      clearInterval(qrScanInterval);
+      qrScanInterval = null;
+    }
+    cameraModal.classList.remove('active');
+    cameraViewport.innerHTML = '';
+    cameraModalHistoryState = null;
+    return;
+  }
+  
+  // If the state was for our camera modal (but modal already closed), just clean up
+  if (event.state && event.state.modal === 'camera') {
+    cameraModalHistoryState = null;
   }
 });
 
