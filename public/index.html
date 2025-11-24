@@ -266,6 +266,9 @@
       backdrop-filter: none;
       z-index: 998;
     }
+    .modal-backdrop[hidden] {
+      display: none !important;
+    }
     .modal {
       position: fixed;
       inset: 0;
@@ -273,6 +276,9 @@
       align-items: center;
       justify-content: center;
       z-index: 999;
+    }
+    .modal[hidden] {
+      display: none !important;
     }
     .modal-content {
       background: var(--card-bg);
