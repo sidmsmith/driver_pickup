@@ -246,22 +246,36 @@ function initBarcodeScanner() {
         width: 640,
         height: 480,
         facingMode: "environment" // Use back camera on mobile
+      },
+      area: { // Focus on center area for better accuracy
+        top: "20%",
+        right: "20%",
+        left: "20%",
+        bottom: "20%"
       }
     },
     decoder: {
       readers: [
         "code_128_reader",
-        "ean_reader",
-        "ean_8_reader",
         "code_39_reader",
         "code_39_vin_reader",
+        "ean_reader",
+        "ean_8_reader",
         "codabar_reader",
         "upc_reader",
         "upc_e_reader",
         "i2of5_reader"
-      ]
+      ],
+      debug: {
+        drawBoundingBox: true,
+        showFrequency: false,
+        drawScanline: true,
+        showPattern: false
+      }
     },
-    locate: true
+    locate: true,
+    numOfWorkers: 2, // Use multiple workers for better performance
+    frequency: 10 // Check every 10 frames
   }, (err) => {
     if (err) {
       console.error('QuaggaJS initialization error:', err);
@@ -278,10 +292,28 @@ function initBarcodeScanner() {
   // Handle successful barcode detection
   Quagga.onDetected((result) => {
     const code = result.codeResult.code;
+    const format = result.codeResult.format;
+    const confidence = result.codeResult.decodedCodes ? 
+      result.codeResult.decodedCodes.filter(x => x.error === 0).length / result.codeResult.decodedCodes.length : 0;
+    
+    console.log('Barcode detected:', { code, format, confidence });
+    
     if (code) {
-      barcodeInput.value = code;
-      closeCamera();
-      validateBarcode(code);
+      // Only accept if confidence is reasonable (at least 50% of codes decoded correctly)
+      if (confidence < 0.5) {
+        console.warn('Low confidence scan, ignoring:', code, 'confidence:', confidence);
+        return;
+      }
+      
+      // Validate format - shipment IDs should start with "SHI" and be alphanumeric
+      if (code.length > 0 && /^[A-Z0-9]+$/i.test(code)) {
+        barcodeInput.value = code;
+        closeCamera();
+        validateBarcode(code);
+      } else {
+        console.warn('Invalid barcode format detected:', code);
+        showStatus(`Scanned: "${code}" - Does not look like a valid shipment ID. Please try again.`, 'error');
+      }
     }
   });
 }
