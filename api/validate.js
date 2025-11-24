@@ -147,9 +147,11 @@ export default async function handler(req, res) {
       billOfLadingNumber: null
     };
 
-    // Find Bill of Lading Number from Stop where Action is "PU"
+    // Find Bill of Lading Number from Stop where StopActionId.StopActionId is "PU"
     if (shipment.Stop && Array.isArray(shipment.Stop)) {
-      const pickupStop = shipment.Stop.find(stop => stop.Action === "PU");
+      const pickupStop = shipment.Stop.find(stop => 
+        stop.StopActionId && stop.StopActionId.StopActionId === "PU"
+      );
       if (pickupStop && pickupStop.BillOfLadingNumber) {
         result.billOfLadingNumber = pickupStop.BillOfLadingNumber;
       }
