@@ -545,7 +545,10 @@ function loadTheme() {
 }
 
 function renderThemeList() {
-  if (!themeList) return;
+  if (!themeList) {
+    console.error('themeList element not found');
+    return;
+  }
   const current = localStorage.getItem('driverPickupTheme') || DEFAULT_THEME_KEY;
   themeList.innerHTML = '';
   Object.entries(THEMES).forEach(([key, theme]) => {
@@ -558,6 +561,7 @@ function renderThemeList() {
     };
     themeList.appendChild(btn);
   });
+  console.log('Theme list rendered', themeList.children.length, 'themes');
 }
 
 function isModalVisible(el) {
@@ -577,14 +581,16 @@ function hideBackdropIfNone() {
 function openThemeModal() {
   if (!themeModal) return;
   renderThemeList();
-  themeModal.hidden = false;
+  themeModal.removeAttribute('hidden');
   showBackdrop();
+  console.log('Theme modal opened', themeModal);
 }
 
 function closeThemeModal() {
   if (!themeModal) return;
-  themeModal.hidden = true;
+  themeModal.setAttribute('hidden', '');
   hideBackdropIfNone();
+  console.log('Theme modal closed');
 }
 
 // Event Listeners
