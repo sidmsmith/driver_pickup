@@ -21,6 +21,9 @@ const themeSelectorBtn = document.getElementById('themeSelectorBtn');
 const themeModal = document.getElementById('themeModal');
 const themeList = document.getElementById('themeList');
 const modalBackdrop = document.getElementById('modalBackdrop');
+const errorModal = document.getElementById('errorModal');
+const errorModalMessage = document.getElementById('errorModalMessage');
+const errorModalCloseBtn = document.getElementById('errorModalCloseBtn');
 
 let token = null;
 let currentOrg = null; // Store org after authentication
@@ -109,6 +112,24 @@ function showStatus(message, type = 'info') {
 
 function hideStatus() {
   statusEl.style.display = 'none';
+}
+
+// Show error modal (for critical errors that need user attention)
+function showErrorModal(message) {
+  if (errorModal && errorModalMessage) {
+    errorModalMessage.textContent = message;
+    errorModal.removeAttribute('hidden');
+  } else {
+    // Fallback to regular status if modal elements not found
+    showStatus(message, 'error');
+  }
+}
+
+// Hide error modal
+function hideErrorModal() {
+  if (errorModal) {
+    errorModal.setAttribute('hidden', '');
+  }
 }
 
 // Show auth status message (in auth section)
@@ -445,7 +466,7 @@ function closeCamera() {
 async function confirmPickup() {
   // Validate signature is not empty
   if (signaturePad.isEmpty()) {
-    showStatus('Please sign before confirming pickup', 'error');
+    showErrorModal('Please sign before confirming pickup');
     return;
   }
   
