@@ -171,10 +171,33 @@
     }
     .info-field input {
       font-size: 1rem;
+      transition: all 0.2s ease;
     }
+    /* Protected/readonly fields - visually distinct */
     .info-field input[readonly] {
-      background: #f5f5f5;
+      background: #e9ecef;
+      border-color: #ced4da;
+      color: #495057;
       cursor: not-allowed;
+      opacity: 0.85;
+      font-weight: 500;
+      position: relative;
+    }
+    .info-field input[readonly]:focus {
+      background: #e9ecef;
+      border-color: #ced4da;
+      box-shadow: none;
+      outline: none;
+    }
+    /* Editable fields - clear and prominent */
+    .info-field input:not([readonly]) {
+      background: var(--input-bg);
+      border-color: var(--input-border);
+    }
+    .info-field input:not([readonly]):focus {
+      background: var(--input-focus-bg);
+      border-color: var(--input-focus-border);
+      box-shadow: 0 0 0 0.2rem var(--input-focus-shadow);
     }
     
     /* Signature Section */
