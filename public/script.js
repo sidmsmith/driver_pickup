@@ -301,20 +301,70 @@ function closeCamera() {
   cameraViewport.innerHTML = ''; // Clear viewport
 }
 
-// Save signature (client-side only for now)
-function saveSignature() {
+// Save signature (upload to Manhattan WMS)
+async function saveSignature() {
+  // Validate signature is not empty
   if (signaturePad.isEmpty()) {
     showStatus('Please sign before saving', 'error');
     return;
   }
   
-  // For now, just show success message
-  // TODO: In future, this will save to backend
-  showStatus('Signature saved (client-side only)', 'success');
+  // Validate token exists
+  if (!token) {
+    showStatus('Authentication required. Please authenticate first.', 'error');
+    return;
+  }
   
-  // Store in localStorage as backup
-  const dataURL = signaturePad.toDataURL();
-  localStorage.setItem(`signature_${currentShipmentId || 'temp'}`, dataURL);
+  // Validate shipment ID exists
+  if (!currentShipmentId) {
+    showStatus('Shipment ID required. Please validate a barcode first.', 'error');
+    return;
+  }
+  
+  // Disable button and show loading state
+  saveSignatureBtn.disabled = true;
+  const originalText = saveSignatureBtn.innerHTML;
+  saveSignatureBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Uploading...';
+  showStatus('Uploading signature...', 'info');
+  
+  try {
+    // Get signature as base64 (strip data URL prefix)
+    const dataURL = signaturePad.toDataURL('image/png');
+    const base64Data = dataURL.replace(/^data:image\/png;base64,/, '');
+    
+    // Generate filename with same format as download
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+    const filename = `${currentShipmentId}_Signature_${timestamp}.png`;
+    
+    // Upload to Manhattan WMS
+    const res = await apiCall('upload_signature', {
+      org: currentOrg,
+      shipmentId: currentShipmentId,
+      filename: filename,
+      fileData: base64Data
+    });
+    
+    if (!res.success) {
+      // Show error with actual server response for troubleshooting
+      const errorMsg = res.error || 'Signature upload failed';
+      showStatus(`Upload failed: ${errorMsg}`, 'error');
+      return;
+    }
+    
+    // Success - show success message
+    showStatus('Signature uploaded successfully!', 'success');
+    
+    // Store in localStorage as backup
+    localStorage.setItem(`signature_${currentShipmentId}`, dataURL);
+    
+  } catch (error) {
+    console.error('Signature upload error:', error);
+    showStatus(`Upload error: ${error.message || 'Unknown error'}`, 'error');
+  } finally {
+    // Re-enable button
+    saveSignatureBtn.disabled = false;
+    saveSignatureBtn.innerHTML = originalText;
+  }
 }
 
 // Clear signature

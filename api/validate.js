@@ -163,6 +163,64 @@ export default async function handler(req, res) {
     return res.json(result);
   }
 
+  // === UPLOAD SIGNATURE ===
+  if (action === 'upload_signature') {
+    const { shipmentId, filename, fileData } = req.body;
+    
+    if (!shipmentId || !filename || !fileData) {
+      return res.status(400).json({ 
+        success: false, 
+        error: "ShipmentId, filename, and fileData are required" 
+      });
+    }
+
+    // Get org from request body (required for selectedOrganization header)
+    const requestOrg = req.body.org;
+    if (!requestOrg) {
+      return res.status(400).json({ 
+        success: false, 
+        error: "ORG required for signature upload" 
+      });
+    }
+
+    const payload = {
+      ObjectTypeId: "Shipment",
+      ObjectId: shipmentId,
+      DocumentCategoryId: "DriverSignature",
+      Action: "overwrite",
+      Description: "Uploaded via API",
+      DocumentManagerFiles: [
+        {
+          FileName: filename,
+          DocumentName: "Driver Signature",
+          Description: "Driver signature captured during pickup",
+          FileData: fileData
+        }
+      ]
+    };
+
+    console.log('[upload_signature] Request', JSON.stringify({ 
+      org: requestOrg, 
+      shipmentId, 
+      filename 
+    }, null, 2));
+    
+    const uploadRes = await apiCall('POST', '/document-manager/api/document-manager/uploadDocuments', token, requestOrg, payload);
+    console.log('[upload_signature] Response', JSON.stringify(uploadRes, null, 2));
+
+    if (uploadRes.error || !uploadRes.success) {
+      const errorMsg = uploadRes.error || uploadRes.message || JSON.stringify(uploadRes);
+      await sendHA("signature_upload_failed", requestOrg, { shipmentId, error: errorMsg });
+      return res.json({ 
+        success: false, 
+        error: errorMsg 
+      });
+    }
+
+    await sendHA("signature_uploaded", requestOrg, { shipmentId, filename });
+    return res.json({ success: true, message: "Signature uploaded successfully" });
+  }
+
   // Unknown action
   return res.status(400).json({ error: "Unknown action" });
 }
