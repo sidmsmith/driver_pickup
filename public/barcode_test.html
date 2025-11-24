@@ -6,6 +6,9 @@
   <title>Barcode Test - SHI000000020</title>
   <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
   <style>
+    * {
+      box-sizing: border-box;
+    }
     body {
       font-family: Arial, sans-serif;
       display: flex;
@@ -14,70 +17,149 @@
       justify-content: center;
       min-height: 100vh;
       margin: 0;
-      background: #fff;
+      background: #f5f5f5;
       padding: 2rem;
     }
     .barcode-container {
       text-align: center;
       background: white;
-      padding: 2rem;
-      border: 2px solid #333;
+      padding: 3rem;
+      border: 3px solid #000;
       border-radius: 8px;
       box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      margin-bottom: 2rem;
+      max-width: 800px;
+      width: 100%;
     }
     h1 {
-      margin-bottom: 1rem;
+      margin-bottom: 2rem;
       color: #333;
+      font-size: 2rem;
     }
     .barcode-label {
-      margin-top: 1rem;
-      font-size: 1.2rem;
+      margin-top: 1.5rem;
+      font-size: 1.5rem;
       font-weight: bold;
-      color: #333;
+      color: #000;
+      letter-spacing: 2px;
+    }
+    .barcode-wrapper {
+      background: #fff;
+      padding: 2rem;
+      border: 2px solid #ddd;
+      margin: 1rem 0;
     }
     svg {
       max-width: 100%;
       height: auto;
+      display: block;
+      margin: 0 auto;
+    }
+    .format-label {
+      font-size: 1rem;
+      color: #666;
+      margin-bottom: 0.5rem;
+      font-weight: bold;
     }
     .instructions {
       margin-top: 2rem;
-      padding: 1rem;
-      background: #f0f0f0;
+      padding: 1.5rem;
+      background: #fff;
+      border: 2px solid #ddd;
       border-radius: 4px;
-      max-width: 600px;
+      max-width: 800px;
+      width: 100%;
+    }
+    .instructions h3 {
+      margin-top: 0;
+      color: #333;
+    }
+    .instructions ul {
+      text-align: left;
+      line-height: 1.8;
+    }
+    .instructions li {
+      margin-bottom: 0.5rem;
+    }
+    .download-btn {
+      margin-top: 1rem;
+      padding: 0.75rem 1.5rem;
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-size: 1rem;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
+    }
+    .download-btn:hover {
+      background: #0056b3;
     }
   </style>
 </head>
 <body>
   <div class="barcode-container">
-    <h1>Test Barcode</h1>
-    <svg id="barcode"></svg>
+    <h1>Test Barcode: SHI000000020</h1>
+    
+    <div class="barcode-wrapper">
+      <div class="format-label">Code 128 (Recommended)</div>
+      <svg id="barcode-code128"></svg>
+    </div>
+    
+    <div class="barcode-wrapper">
+      <div class="format-label">Code 39</div>
+      <svg id="barcode-code39"></svg>
+    </div>
+    
     <div class="barcode-label">SHI000000020</div>
   </div>
   
   <div class="instructions">
-    <h3>Instructions:</h3>
-    <ul style="text-align: left;">
-      <li>This barcode contains: <strong>SHI000000020</strong></li>
-      <li>Format: Code 128</li>
-      <li>Try scanning this with the Driver Pickup app camera</li>
-      <li>Make sure the barcode is clearly visible and well-lit</li>
-      <li>Hold the camera steady and at an appropriate distance</li>
+    <h3>Scanning Instructions:</h3>
+    <ul>
+      <li><strong>Expected Value:</strong> SHI000000020</li>
+      <li><strong>Formats:</strong> Code 128 (primary) and Code 39 (fallback)</li>
+      <li>Try scanning with the Driver Pickup app camera</li>
+      <li>Make sure your screen brightness is at maximum</li>
+      <li>Hold the camera steady, 6-12 inches away from the screen</li>
+      <li>Ensure the barcode fills most of the camera viewfinder</li>
+      <li>If one format doesn't work, try the other</li>
+      <li>Screen scanning can be tricky - try different angles and distances</li>
     </ul>
   </div>
 
   <script>
-    // Generate Code 128 barcode
-    JsBarcode("#barcode", "SHI000000020", {
+    const barcodeValue = "SHI000000020";
+    
+    // Generate Code 128 barcode (larger, thicker bars for better scanning)
+    JsBarcode("#barcode-code128", barcodeValue, {
       format: "CODE128",
-      width: 2,
-      height: 100,
+      width: 3,  // Thicker bars
+      height: 150,  // Taller barcode
       displayValue: true,
-      fontSize: 20,
-      margin: 10,
+      fontSize: 24,
+      margin: 15,
       background: "#ffffff",
-      lineColor: "#000000"
+      lineColor: "#000000",
+      textMargin: 5
     });
+    
+    // Generate Code 39 barcode (alternative format)
+    JsBarcode("#barcode-code39", barcodeValue, {
+      format: "CODE39",
+      width: 3,
+      height: 150,
+      displayValue: true,
+      fontSize: 24,
+      margin: 15,
+      background: "#ffffff",
+      lineColor: "#000000",
+      textMargin: 5
+    });
+    
+    // Log for debugging
+    console.log('Barcode test page loaded. Expected value:', barcodeValue);
   </script>
 </body>
 </html>
