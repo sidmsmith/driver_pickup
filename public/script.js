@@ -620,6 +620,5 @@ window.addEventListener('load', async () => {
   
   // Check for auto-authenticate
   checkAutoAuth();
-  initUI();
 });
 
