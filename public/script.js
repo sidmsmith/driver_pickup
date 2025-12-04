@@ -188,12 +188,29 @@ async function authenticate() {
   
   showAuthStatus('Authenticating...', 'info');
   
+  // Track auth attempt in Statsig
+  if (window.StatsigTracking && window.StatsigTracking.isInitialized()) {
+    window.StatsigTracking.logEvent('auth_attempt', {
+      org: org,
+      timestamp: new Date().toISOString()
+    });
+  }
+  
   try {
     const res = await apiCall('auth', { org });
     
     if (!res.success) {
       showAuthStatus('Authentication Failed!', 'error');
       mainUI.style.display = 'none';
+      
+      // Track auth failure in Statsig
+      if (window.StatsigTracking && window.StatsigTracking.isInitialized()) {
+        window.StatsigTracking.logEvent('auth_failed', {
+          org: org,
+          error: res.error || 'Auth failed',
+          timestamp: new Date().toISOString()
+        });
+      }
       return;
     }
     
@@ -202,6 +219,14 @@ async function authenticate() {
     hideAuthStatus(); // Hide auth status on success
     authSection.style.display = 'none';
     mainUI.style.display = 'block';
+    
+    // Track auth success in Statsig
+    if (window.StatsigTracking && window.StatsigTracking.isInitialized()) {
+      window.StatsigTracking.logEvent('auth_success', {
+        org: org,
+        timestamp: new Date().toISOString()
+      });
+    }
     
     // If ShipmentId was provided in URL, automatically validate it
     if (window.urlShipmentId) {
@@ -221,6 +246,15 @@ async function authenticate() {
     console.error('Authentication error:', error);
     showAuthStatus('Authentication Failed!', 'error');
     mainUI.style.display = 'none';
+    
+    // Track auth error in Statsig
+    if (window.StatsigTracking && window.StatsigTracking.isInitialized()) {
+      window.StatsigTracking.logEvent('auth_failed', {
+        org: org,
+        error: error.message || 'Unknown error',
+        timestamp: new Date().toISOString()
+      });
+    }
   }
 }
 
@@ -232,6 +266,16 @@ async function validateBarcode(shipmentId) {
   }
   
   showStatus('Validating barcode...', 'info');
+  
+  // Track barcode validation attempt in Statsig
+  if (window.StatsigTracking && window.StatsigTracking.isInitialized()) {
+    window.StatsigTracking.logEvent('barcode_validation_attempt', {
+      org: currentOrg || 'unknown',
+      shipment_id: shipmentId.trim(),
+      timestamp: new Date().toISOString()
+    });
+  }
+  
   const res = await apiCall('validate_barcode', { 
     org: currentOrg,
     shipmentId: shipmentId.trim() 
@@ -246,6 +290,16 @@ async function validateBarcode(shipmentId) {
     const signatureSection = document.querySelector('.signature-section');
     if (signatureSection) {
       signatureSection.style.display = 'none';
+    }
+    
+    // Track validation failure in Statsig
+    if (window.StatsigTracking && window.StatsigTracking.isInitialized()) {
+      window.StatsigTracking.logEvent('barcode_validation_failed', {
+        org: currentOrg || 'unknown',
+        shipment_id: shipmentId.trim(),
+        error: res.error || 'Validation failed',
+        timestamp: new Date().toISOString()
+      });
     }
     
     // Ensure barcode input is visible and ready for user to enter new ShipmentId
@@ -264,6 +318,16 @@ async function validateBarcode(shipmentId) {
   driverField.value = ''; // Clear driver field
   
   shipmentInfo.style.display = 'block';
+  
+  // Track successful validation in Statsig
+  if (window.StatsigTracking && window.StatsigTracking.isInitialized()) {
+    window.StatsigTracking.logEvent('barcode_validated', {
+      org: currentOrg || 'unknown',
+      shipment_id: res.shipmentId || shipmentId.trim(),
+      carrier: res.assignedCarrierId || '',
+      timestamp: new Date().toISOString()
+    });
+  }
   
   // Show signature section after successful validation
   const signatureSection = document.querySelector('.signature-section');
@@ -412,6 +476,16 @@ function startQRCodeScanning() {
 
 // Process scanned code (from either 1D barcode or QR code)
 function processScannedCode(code, source) {
+  // Track barcode scan in Statsig
+  if (window.StatsigTracking && window.StatsigTracking.isInitialized()) {
+    window.StatsigTracking.logEvent('barcode_scanned', {
+      org: currentOrg || 'unknown',
+      scan_source: source,
+      code_length: String(code.length),
+      timestamp: new Date().toISOString()
+    });
+  }
+  
   // Validate format - shipment IDs should be alphanumeric
   if (code.length > 0 && /^[A-Z0-9]+$/i.test(code)) {
     console.log(`Processing scanned code from ${source}:`, code);
@@ -421,6 +495,16 @@ function processScannedCode(code, source) {
   } else {
     console.warn(`Invalid code format detected from ${source}:`, code);
     showStatus(`Scanned: "${code}" - Does not look like a valid shipment ID. Please try again.`, 'error');
+    
+    // Track invalid scan in Statsig
+    if (window.StatsigTracking && window.StatsigTracking.isInitialized()) {
+      window.StatsigTracking.logEvent('barcode_scan_invalid', {
+        org: currentOrg || 'unknown',
+        scan_source: source,
+        code: code.substring(0, 50), // Limit length
+        timestamp: new Date().toISOString()
+      });
+    }
   }
 }
 
@@ -577,6 +661,16 @@ async function confirmPickup() {
     return;
   }
   
+  // Track pickup confirmation attempt in Statsig
+  if (window.StatsigTracking && window.StatsigTracking.isInitialized()) {
+    window.StatsigTracking.logEvent('pickup_confirmation_attempt', {
+      org: currentOrg || 'unknown',
+      shipment_id: currentShipmentId,
+      driver: driverField.value || '',
+      timestamp: new Date().toISOString()
+    });
+  }
+  
   // Disable button and show loading state
   confirmPickupBtn.disabled = true;
   const originalText = confirmPickupBtn.innerHTML;
@@ -602,11 +696,33 @@ async function confirmPickup() {
       // Show error with actual server response for troubleshooting
       const errorMsg = res.error || 'Signature upload failed';
       showStatus(`Upload failed: ${errorMsg}`, 'error');
+      
+      // Track upload failure in Statsig
+      if (window.StatsigTracking && window.StatsigTracking.isInitialized()) {
+        window.StatsigTracking.logEvent('pickup_confirmation_failed', {
+          org: currentOrg || 'unknown',
+          shipment_id: currentShipmentId,
+          error: errorMsg,
+          timestamp: new Date().toISOString()
+        });
+      }
       return;
     }
     
     // Success - show success message
     showStatus('Pickup confirmed successfully!', 'success');
+    
+    // Track successful pickup confirmation in Statsig
+    if (window.StatsigTracking && window.StatsigTracking.isInitialized()) {
+      window.StatsigTracking.logEvent('pickup_confirmed', {
+        org: currentOrg || 'unknown',
+        shipment_id: currentShipmentId,
+        driver: driverField.value || '',
+        carrier: carrierField.value || '',
+        trailer: trailerField.value || '',
+        timestamp: new Date().toISOString()
+      });
+    }
     
     // Store in localStorage as backup (using enhanced image)
     localStorage.setItem(`signature_${currentShipmentId}`, dataURL);
@@ -640,6 +756,16 @@ async function confirmPickup() {
   } catch (error) {
     console.error('Signature upload error:', error);
     showStatus(`Upload error: ${error.message || 'Unknown error'}`, 'error');
+    
+    // Track upload error in Statsig
+    if (window.StatsigTracking && window.StatsigTracking.isInitialized()) {
+      window.StatsigTracking.logEvent('pickup_confirmation_failed', {
+        org: currentOrg || 'unknown',
+        shipment_id: currentShipmentId || '',
+        error: error.message || 'Unknown error',
+        timestamp: new Date().toISOString()
+      });
+    }
   } finally {
     // Re-enable button
     confirmPickupBtn.disabled = false;
@@ -943,6 +1069,17 @@ window.addEventListener('popstate', (event) => {
 // App opened - send tracking event
 window.addEventListener('load', async () => {
   loadTheme(); // Load saved theme
+  
+  // Track app opened in Statsig (will be logged by statsig.js initialization)
+  // But also track it here with additional context
+  if (window.StatsigTracking && window.StatsigTracking.isInitialized()) {
+    window.StatsigTracking.logEvent('app_opened', {
+      timestamp: new Date().toISOString(),
+      userAgent: navigator.userAgent,
+      has_url_params: String(window.location.search.length > 0)
+    });
+  }
+  
   await apiCall('app_opened');
   
   // Check for auto-authenticate
