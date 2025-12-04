@@ -177,7 +177,7 @@ export default async function handler(req, res) {
 
   // === UPLOAD SIGNATURE ===
   if (action === 'upload_signature') {
-    const { shipmentId, filename, fileData } = req.body;
+    const { shipmentId, filename, fileData, driver } = req.body;
     
     if (!shipmentId || !filename || !fileData) {
       return res.status(400).json({ 
@@ -195,6 +195,22 @@ export default async function handler(req, res) {
       });
     }
 
+    // Format Date, Time, and Driver for Notes field
+    const now = new Date();
+    const date = now.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    });
+    const time = now.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false
+    });
+    const driverName = driver || 'Unknown';
+    const notes = `${date}, ${time}, ${driverName}`;
+
     const payload = {
       ObjectTypeId: "Shipment",
       ObjectId: shipmentId,
@@ -206,6 +222,7 @@ export default async function handler(req, res) {
           FileName: filename,
           DocumentName: "Driver Signature",
           Description: "Driver signature captured during pickup",
+          Notes: notes,
           FileData: fileData
         }
       ]

@@ -684,12 +684,16 @@ async function confirmPickup() {
     // Generate filename: Signature_{ShipmentId}.png
     const filename = `Signature_${currentShipmentId}.png`;
     
+    // Get driver name for Notes field
+    const driverName = driverField.value || 'Unknown';
+    
     // Upload to Manhattan WMS
     const res = await apiCall('upload_signature', {
       org: currentOrg,
       shipmentId: currentShipmentId,
       filename: filename,
-      fileData: base64Data
+      fileData: base64Data,
+      driver: driverName
     });
     
     if (!res.success) {
