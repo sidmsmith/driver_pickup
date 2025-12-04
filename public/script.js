@@ -78,24 +78,76 @@ function initSignaturePad() {
     throttle: 16
   });
   
-  // Handle window resize
+  // Handle window resize - save and restore signature to prevent clearing on mobile keyboard
+  let resizeTimeout = null;
   function resizeCanvas() {
-    const computedStyle = window.getComputedStyle(canvas);
-    const newWidth = parseInt(computedStyle.width, 10) || canvas.offsetWidth || 400;
-    const newHeight = parseInt(computedStyle.height, 10) || canvas.offsetHeight || 200;
-    
-    const ratio = Math.max(window.devicePixelRatio || 1, 1);
-    canvas.width = newWidth * ratio;
-    canvas.height = newHeight * ratio;
-    canvas.style.width = newWidth + 'px';
-    canvas.style.height = newHeight + 'px';
-    
-    const ctx = canvas.getContext('2d');
-    ctx.scale(ratio, ratio);
-    
-    if (signaturePad) {
-      signaturePad.clear();
+    // Debounce resize events to avoid multiple calls
+    if (resizeTimeout) {
+      clearTimeout(resizeTimeout);
     }
+    
+    resizeTimeout = setTimeout(() => {
+      if (!signaturePad || signaturePad.isEmpty()) {
+        // No signature to save, just resize
+        const computedStyle = window.getComputedStyle(canvas);
+        const newWidth = parseInt(computedStyle.width, 10) || canvas.offsetWidth || 400;
+        const newHeight = parseInt(computedStyle.height, 10) || canvas.offsetHeight || 200;
+        
+        const ratio = Math.max(window.devicePixelRatio || 1, 1);
+        canvas.width = newWidth * ratio;
+        canvas.height = newHeight * ratio;
+        canvas.style.width = newWidth + 'px';
+        canvas.style.height = newHeight + 'px';
+        
+        const ctx = canvas.getContext('2d');
+        ctx.scale(ratio, ratio);
+        return;
+      }
+      
+      // Save signature data before resizing
+      const signatureData = signaturePad.toDataURL('image/png');
+      
+      // Get new dimensions
+      const computedStyle = window.getComputedStyle(canvas);
+      const newWidth = parseInt(computedStyle.width, 10) || canvas.offsetWidth || 400;
+      const newHeight = parseInt(computedStyle.height, 10) || canvas.offsetHeight || 200;
+      
+      // Check if dimensions actually changed significantly (more than 10px difference)
+      const currentWidth = canvas.offsetWidth || parseInt(computedStyle.width, 10) || 400;
+      const currentHeight = canvas.offsetHeight || parseInt(computedStyle.height, 10) || 200;
+      
+      const widthDiff = Math.abs(newWidth - currentWidth);
+      const heightDiff = Math.abs(newHeight - currentHeight);
+      
+      // Only resize if dimensions changed significantly (not just keyboard appearing)
+      if (widthDiff < 10 && heightDiff < 10) {
+        return; // Skip resize for minor changes (like keyboard appearing)
+      }
+      
+      const ratio = Math.max(window.devicePixelRatio || 1, 1);
+      canvas.width = newWidth * ratio;
+      canvas.height = newHeight * ratio;
+      canvas.style.width = newWidth + 'px';
+      canvas.style.height = newHeight + 'px';
+      
+      const ctx = canvas.getContext('2d');
+      ctx.scale(ratio, ratio);
+      
+      // Restore signature after resize
+      const img = new Image();
+      img.onload = () => {
+        // Clear and redraw the signature on the resized canvas
+        ctx.clearRect(0, 0, newWidth, newHeight);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, newWidth, newHeight);
+        ctx.drawImage(img, 0, 0, newWidth, newHeight);
+        // Update signature pad's internal state by loading the data URL
+        if (signaturePad && typeof signaturePad.fromDataURL === 'function') {
+          signaturePad.fromDataURL(signatureData);
+        }
+      };
+      img.src = signatureData;
+    }, 150); // Debounce resize events by 150ms
   }
   
   window.addEventListener('resize', resizeCanvas);
@@ -649,6 +701,14 @@ async function confirmPickup() {
     return;
   }
   
+  // Validate driver name is provided
+  const driverName = driverField.value.trim();
+  if (!driverName) {
+    showErrorModal('Driver name is required. Please enter the driver name before confirming pickup.');
+    driverField.focus();
+    return;
+  }
+  
   // Validate token exists
   if (!token) {
     showStatus('Authentication required. Please authenticate first.', 'error');
@@ -684,8 +744,7 @@ async function confirmPickup() {
     // Generate filename: Signature_{ShipmentId}.png
     const filename = `Signature_${currentShipmentId}.png`;
     
-    // Get driver name for Notes field
-    const driverName = driverField.value || 'Unknown';
+    // Driver name already validated above, use it for Notes field
     
     // Upload to Manhattan WMS
     const res = await apiCall('upload_signature', {
