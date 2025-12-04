@@ -746,13 +746,25 @@ async function confirmPickup() {
     
     // Driver name already validated above, use it for Notes field
     
+    // Format timestamp to match signature image format (same timezone)
+    const timestamp = new Date().toLocaleString('en-US', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false
+    });
+    
     // Upload to Manhattan WMS
     const res = await apiCall('upload_signature', {
       org: currentOrg,
       shipmentId: currentShipmentId,
       filename: filename,
       fileData: base64Data,
-      driver: driverName
+      driver: driverName,
+      timestamp: timestamp
     });
     
     if (!res.success) {

@@ -177,7 +177,7 @@ export default async function handler(req, res) {
 
   // === UPLOAD SIGNATURE ===
   if (action === 'upload_signature') {
-    const { shipmentId, filename, fileData, driver } = req.body;
+    const { shipmentId, filename, fileData, driver, timestamp } = req.body;
     
     if (!shipmentId || !filename || !fileData) {
       return res.status(400).json({ 
@@ -195,21 +195,30 @@ export default async function handler(req, res) {
       });
     }
 
-    // Format Date, Time, and Driver for Notes field
-    const now = new Date();
-    const date = now.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit'
-    });
-    const time = now.toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      hour12: false
-    });
+    // Use timestamp from client (matches signature image timezone) or fallback to server time
     const driverName = driver || 'Unknown';
-    const notes = `${date}, ${time}, ${driverName}`;
+    let notes;
+    
+    if (timestamp) {
+      // Client provided timestamp (already formatted with user's timezone)
+      // Format: "MM/DD/YYYY, HH:MM:SS"
+      notes = `${timestamp}, ${driverName}`;
+    } else {
+      // Fallback to server time if client timestamp not provided
+      const now = new Date();
+      const date = now.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+      });
+      const time = now.toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false
+      });
+      notes = `${date}, ${time}, ${driverName}`;
+    }
 
     const payload = {
       ObjectTypeId: "Shipment",
