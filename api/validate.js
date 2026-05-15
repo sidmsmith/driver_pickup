@@ -4,7 +4,7 @@ import fetch from 'node-fetch';
 const USAGE_INGEST_URL = (process.env.MANHATTAN_USAGE_INGEST_URL || '').trim();
 const USAGE_INGEST_SECRET = (process.env.MANHATTAN_USAGE_INGEST_SECRET || '').trim();
 const APP_NAME = 'driver-pickup';
-const APP_VERSION = '2.0.0';
+const APP_VERSION = '1.0.5';
 
 const AUTH_HOST = process.env.MANHATTAN_AUTH_HOST || "salep-auth.sce.manh.com";
 const API_HOST = process.env.MANHATTAN_API_HOST || "salep.sce.manh.com";
