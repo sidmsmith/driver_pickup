@@ -18,6 +18,8 @@ Set the following environment variables in Vercel:
 
 - `MANHATTAN_PASSWORD` - Manhattan WMS password
 - `MANHATTAN_SECRET` - Manhattan OAuth client secret
+- `MANHATTAN_USAGE_INGEST_URL` - Dashboard usage-ingest URL (posts usage events to Neon)
+- `MANHATTAN_USAGE_INGEST_SECRET` - Optional; must match dashboard `MANHATTAN_USAGE_INGEST_SECRET` if configured
 
 ### Local Development
 
@@ -33,7 +35,7 @@ The app is configured for Vercel deployment. Push to GitHub and connect to Verce
 ## API Endpoints
 
 - `POST /api/validate` - Main API endpoint
-  - `action: 'app_opened'` - Track app usage
+  - `action: 'usage-track'` - Forward usage events to Neon (browser sends `event_name` + `metadata`)
   - `action: 'auth'` - Authenticate with ORG
   - `action: 'validate_barcode'` - Validate shipment barcode
 
